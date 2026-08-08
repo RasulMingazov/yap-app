@@ -20,20 +20,19 @@ apps/mobile/
 ├── android-app                # Android entry point
 ├── ios-app                    # Xcode host placeholder
 ├── shared-app                 # shared UI entry point and iOS framework
-├── app-root                   # bootstrap and session-driven root
+├── app-root                   # bootstrap and composition root
 ├── feature-auth               # authentication presentation/orchestration
-├── session                    # application-wide session ownership
-└── core/
-    ├── design                 # shared visual primitives
-    └── network                # shared HTTP client infrastructure
+├── core-common                # shared coroutine/presentation primitives
+├── core-design                # shared visual primitives
+├── core-network               # shared HTTP client infrastructure
+└── core-test                  # shared test utilities
 
 services/server/
 ├── app                        # server composition module
 ├── feature-auth               # auth routes and server business capability
-└── core/
-    ├── config                 # environment and runtime configuration
-    ├── database               # database bootstrap and transactions
-    └── security               # token and authentication infrastructure
+├── core-config                # environment and runtime configuration
+├── core-database              # database bootstrap and transactions
+└── core-security              # token and authentication infrastructure
 ```
 
 Feature modules do not depend on other feature implementations. Entry-point

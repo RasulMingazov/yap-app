@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":services:server:core:config"))
+    implementation(project(":services:server:core-config"))
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.java.time)

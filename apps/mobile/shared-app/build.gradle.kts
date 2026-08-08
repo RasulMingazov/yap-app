@@ -16,7 +16,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":apps:mobile:app-root"))
-            implementation(project(":apps:mobile:core:design"))
+            implementation(project(":apps:mobile:core-design"))
         }
     }
 }

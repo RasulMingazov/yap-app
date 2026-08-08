@@ -7,8 +7,6 @@ Yap App is one Gradle monorepo. Authentication is currently the only product sco
 - Keep mobile, server, and shared-contract code inside their existing module trees.
 - Mobile product features must not depend on other mobile feature implementations.
 - Server product features must not depend on other server feature implementations.
-- `apps:mobile:session` owns application-wide session state; auth may establish or
-  clear a session, and `apps:mobile:app-root` observes it.
 - `shared:contract:auth` contains only platform-neutral wire types and must not
   depend on mobile or server modules.
 - Server feature modules own their routes, domain behavior, and persistence
@@ -29,7 +27,7 @@ the declaration for a one-off false positive over widening a rule.
 
 Before updating `stub-call` or its bundled Maven artifacts, read
 [Updating StubCall](docs/development/updating-stub-call.md). Mobile feature tests
-depend on it transitively through `apps:mobile:core:test`; server modules add
+depend on it transitively through `apps:mobile:core-test`; server modules add
 `testImplementation(libs.stubcall)` directly, module by module, as their tests need it.
 
 ## Working tree and Git

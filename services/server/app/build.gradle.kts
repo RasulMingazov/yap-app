@@ -3,6 +3,6 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":services:server:core:config"))
+    implementation(project(":services:server:core-config"))
     implementation(project(":services:server:feature-auth"))
 }

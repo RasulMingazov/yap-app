@@ -5,7 +5,7 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            api(project(":apps:mobile:core:common"))
+            api(project(":apps:mobile:core-common"))
             api(libs.stubcall)
             api(libs.kotlinx.coroutines.test)
         }

@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":services:server:core:database"))
-    implementation(project(":services:server:core:security"))
+    implementation(project(":services:server:core-database"))
+    implementation(project(":services:server:core-security"))
     implementation(project(":shared:contract:auth"))
 }

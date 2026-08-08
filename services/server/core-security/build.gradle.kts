@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":services:server:core:config"))
+    implementation(project(":services:server:core-config"))
     implementation(libs.auth0.java.jwt)
 
     testImplementation(libs.stubcall)

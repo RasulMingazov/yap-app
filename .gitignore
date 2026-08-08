@@ -13,3 +13,4 @@ DerivedData/
 .env
 .env.*
 local.properties
+.claude/
