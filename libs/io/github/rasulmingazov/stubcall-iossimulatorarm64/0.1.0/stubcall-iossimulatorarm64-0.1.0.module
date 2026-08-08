@@ -1,0 +1,104 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../stubcall/0.1.0/stubcall-0.1.0.module",
+    "group": "io.github.rasulmingazov",
+    "module": "stubcall",
+    "version": "0.1.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.4.1"
+    }
+  },
+  "variants": [
+    {
+      "name": "iosSimulatorArm64ApiElements-published",
+      "attributes": {
+        "artifactType": "org.jetbrains.kotlin.klib",
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "stubcall-iosSimulatorArm64Main-0.1.0.klib",
+          "url": "stubcall-iossimulatorarm64-0.1.0.klib",
+          "size": 23680,
+          "sha512": "22ab18d53f33f572871f2ad814290ea7dce3992d0b7095e33d1f7932d9b734ae8433b0c17773c4b8a3c2aac239fd28f00764615f2630352ace6498490cded510",
+          "sha256": "440843f3568df90ef50024c63ce1ee3eb26faeb28fcb0a4a597245a97b2321ca",
+          "sha1": "3b536c3bdb704fdfb390b4ff2df36ec6d4b3f958",
+          "md5": "1c906795882fe63308d06b06a079f9eb"
+        }
+      ]
+    },
+    {
+      "name": "iosSimulatorArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "stubcall-iossimulatorarm64-0.1.0-sources.jar",
+          "url": "stubcall-iossimulatorarm64-0.1.0-sources.jar",
+          "size": 5573,
+          "sha512": "c908a0b4bef6b972d580a472584703ddc8f017f86aeb89b2e918821ed5831d6ce6255b0f067268b31433ea2dad19a01ffaeffbc70132125bd0a029ba4c62f572",
+          "sha256": "b360b59060d483745a893daad95308a87ff951c1b9d68ba2147e511082fd43aa",
+          "sha1": "1b550c6a5429c05a91498d0888129fa19001aa00",
+          "md5": "88a5550725e80256cbca01581c6bedf1"
+        }
+      ]
+    },
+    {
+      "name": "iosSimulatorArm64MetadataElements-published",
+      "attributes": {
+        "artifactType": "org.jetbrains.kotlin.klib",
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "stubcall-iossimulatorarm64-0.1.0-metadata.jar",
+          "url": "stubcall-iossimulatorarm64-0.1.0-metadata.jar",
+          "size": 261,
+          "sha512": "1487e5a20c9e4d74f298e07c42e96a61be11b7a768c3fbc199ee138cd68e1fc2267d1cfe3f11f288acc05df755315344d052cc5f6f751f126ab4fe1caa5125ea",
+          "sha256": "c6deada2fac53b8ea6523dbda77597b128006674616f140f04df23264c6d1aa3",
+          "sha1": "2ad14aed781c4a73ed4dbb421966d408a0a06686",
+          "md5": "f43436d6bec321290f6af228ad602604"
+        }
+      ]
+    }
+  ]
+}

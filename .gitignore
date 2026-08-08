@@ -1,0 +1,15 @@
+.DS_Store
+.idea/
+.vscode/
+.gradle/
+.kotlin/
+**/build/
+**/out/
+DerivedData/
+*.iml
+*.log
+*.tmp
+*.swp
+.env
+.env.*
+local.properties

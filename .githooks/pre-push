@@ -1,0 +1,19 @@
+#!/bin/sh
+# Blocks `git push` if detekt finds violations. Enable once per clone with:
+#   git config core.hooksPath .githooks
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root" || exit 1
+
+echo "Running detekt before push..."
+./gradlew detekt --console=plain
+status=$?
+
+if [ $status -ne 0 ]; then
+    echo ""
+    echo "detekt found violations — push aborted."
+    echo "Run './gradlew detekt' to see the findings, fix them, then push again."
+    exit 1
+fi
+
+exit 0

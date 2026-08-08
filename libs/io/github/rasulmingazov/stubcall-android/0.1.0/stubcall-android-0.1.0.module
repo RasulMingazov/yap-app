@@ -1,0 +1,102 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../stubcall/0.1.0/stubcall-0.1.0.module",
+    "group": "io.github.rasulmingazov",
+    "module": "stubcall",
+    "version": "0.1.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.4.1"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "stubcall.aar",
+          "url": "stubcall-android-0.1.0.aar",
+          "size": 21122,
+          "sha512": "bbae76b91cd04b6ff0a9e399ab93f2657972ac927f0a1e4acf9b8953951cdb342ec584321855eeaba5f3fd1a708b545eedc9b7b85cee930e1498bfce047eaae5",
+          "sha256": "aed45760a306920857ccd89ae5f92e44054539f9e161abe9809f7d7f366b8559",
+          "sha1": "6a94019401157ce488bceab22a4d16685afdd131",
+          "md5": "46d6149c53acc88c78b4001b3972b445"
+        }
+      ]
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "stubcall.aar",
+          "url": "stubcall-android-0.1.0.aar",
+          "size": 21122,
+          "sha512": "bbae76b91cd04b6ff0a9e399ab93f2657972ac927f0a1e4acf9b8953951cdb342ec584321855eeaba5f3fd1a708b545eedc9b7b85cee930e1498bfce047eaae5",
+          "sha256": "aed45760a306920857ccd89ae5f92e44054539f9e161abe9809f7d7f366b8559",
+          "sha1": "6a94019401157ce488bceab22a4d16685afdd131",
+          "md5": "46d6149c53acc88c78b4001b3972b445"
+        }
+      ]
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "files": [
+        {
+          "name": "stubcall-android-0.1.0-sources.jar",
+          "url": "stubcall-android-0.1.0-sources.jar",
+          "size": 5573,
+          "sha512": "c908a0b4bef6b972d580a472584703ddc8f017f86aeb89b2e918821ed5831d6ce6255b0f067268b31433ea2dad19a01ffaeffbc70132125bd0a029ba4c62f572",
+          "sha256": "b360b59060d483745a893daad95308a87ff951c1b9d68ba2147e511082fd43aa",
+          "sha1": "1b550c6a5429c05a91498d0888129fa19001aa00",
+          "md5": "88a5550725e80256cbca01581c6bedf1"
+        }
+      ]
+    }
+  ]
+}
