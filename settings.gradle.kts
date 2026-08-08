@@ -25,7 +25,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "yap"
+rootProject.name = "yap-app"
 
 include(":shared:contract:auth")
 

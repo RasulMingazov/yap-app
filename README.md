@@ -1,6 +1,6 @@
-# Yap
+# Yap App
 
-Yap is a single Gradle monorepo containing a Kotlin Multiplatform mobile client,
+Yap App is a single Gradle monorepo containing a Kotlin Multiplatform mobile client,
 a modular Kotlin/JVM server, and shared wire contracts.
 
 Shared Gradle policy is implemented by the included `convention-plugins` build.

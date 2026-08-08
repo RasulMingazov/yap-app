@@ -1,6 +1,6 @@
-# Yap Workspace
+# Yap App Workspace
 
-Yap is one Gradle monorepo. Authentication is currently the only product scope.
+Yap App is one Gradle monorepo. Authentication is currently the only product scope.
 
 ## Boundaries
 
