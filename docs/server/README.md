@@ -1,6 +1,7 @@
 # Server
 
 These documents define current implementation rules under `services/server/*`.
+All Kotlin in this area also follows [Code conventions](../code-conventions.md).
 
 | Document | Read when changing |
 | --- | --- |

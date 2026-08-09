@@ -2,7 +2,9 @@
 
 ## Context
 
-Presentation tests repeatedly construct `DataState`, `UiState`, nested UI values, and resource selections. Keeping them together makes mapper and model expectations easier to read.
+Presentation tests repeatedly construct `Model.DataState`, `Component.UiState`,
+`Component.News`, nested presentation values, and resource selections. Keeping them together
+makes mapper and model expectations easier to read.
 
 ## Decision
 
@@ -12,46 +14,55 @@ Create one `internal object SliceStubs` beside the presentation tests:
 internal object ProfileStubs {
 
     fun stubDataState(
-        user: User?,
-        isLoading: Boolean,
         hasError: Boolean,
-    ) = DataState(
-        user = user,
-        isLoading = isLoading,
+        isLoading: Boolean,
+        user: User?,
+    ) = ProfileModel.DataState(
         hasError = hasError,
+        isLoading = isLoading,
+        user = user,
     )
 
     fun stubUiState(
-        name: String,
         email: String,
+        error: ProfileComponent.UiState.Error?,
         isLoading: Boolean,
-        error: UiState.Error?,
-    ) = UiState(
-        name = name,
+        name: String,
+    ) = ProfileComponent.UiState(
         email = email,
-        isLoading = isLoading,
         error = error,
+        isLoading = isLoading,
+        name = name,
     )
 
     fun stubContentUiState(
-        name: String = StubUser.NAME,
         email: String = StubUser.EMAIL_VALUE,
-        error: UiState.Error? = null,
+        error: ProfileComponent.UiState.Error? = null,
+        name: String = StubUser.NAME,
     ) = stubUiState(
-        name = name,
         email = email,
-        isLoading = false,
         error = error,
+        isLoading = false,
+        name = name,
     )
 
     fun stubError(
         message: StringResource = Res.string.profile_error,
-    ) = UiState.Error(message = message)
+    ) = ProfileComponent.UiState.Error(message = message)
+
+    fun stubSnackbarNews(
+        message: StringResource = Res.string.profile_error,
+    ) = ProfileComponent.News.ShowSnackbar(message = message)
 }
 ```
 
-- Name the object after the presentation slice, such as `ProfileStubs` or `SignInStubs`.
-- Keep `DataState`, `UiState`, nested UI values, and presentation resources for that slice in the same object.
+- Name the object after the presentation slice, such as `ProfileStubs` or `LoginStubs`.
+- Keep `Model.DataState`, `Component.UiState`, `Component.News`, nested presentation values, and
+  presentation resources for that slice in the same object.
+- Include text resources, icon resources or tokens, ordering, visibility, availability, and
+  enabled/loading values in builders when they are part of the mapper's observable output.
+- Add dedicated builders for one-shot `News` payloads, including snackbar messages. Do not add a
+  snackbar trigger to a `UiState` builder.
 - Use base builders with explicit fields when a test must describe the whole mapping input or output.
 - Add named scenario builders with defaults for recurring states, such as `stubContentUiState()`.
 - Keep every parameter named and overridable.

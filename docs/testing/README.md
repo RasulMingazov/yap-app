@@ -1,5 +1,7 @@
 # Testing
 
+Test code also follows [Code conventions](../code-conventions.md).
+
 These documents define focused test rules for `apps/mobile/*` and `services/server/*`. Read each document relevant to the test code being changed.
 
 For a behavior change, add a focused test first and run it to confirm that it fails
@@ -19,7 +21,7 @@ behavior the project does not own.
 | --- | --- |
 | [Test environment](002-environment.md) | repeated setup or system-under-test construction |
 | [Test stubs](003-stubs.md) | domain/data builders, `stubcall`, or behavioral collaborators |
-| [Presentation stubs](004-presentation-stubs.md) | `DataState`, `UiState`, nested UI values, or resource expectations |
+| [Presentation stubs](004-presentation-stubs.md) | `Model.DataState`, `Component.UiState`, `Component.News`, nested presentation values, or resource expectations |
 | [Test fixtures](005-fixtures.md) | sharing feature-owned stubs between modules |
 
 ## Backend integration

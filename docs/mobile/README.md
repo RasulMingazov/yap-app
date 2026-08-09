@@ -1,6 +1,7 @@
 # Mobile
 
 These documents define current implementation rules under `apps/mobile/*`.
+All Kotlin in this area also follows [Code conventions](../code-conventions.md).
 
 | Document | Read when changing |
 | --- | --- |

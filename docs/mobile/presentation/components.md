@@ -8,7 +8,9 @@
 - Assign each `Value` once; do not recreate it from a property getter.
 - Expose one-shot `Flow<News>`, `Event`, child contracts, and `Factory` only when needed.
 - Name events after intent: `SendClicked`, `TextChanged`, `ErrorDismissed`.
-- Nest `UiState`, `Event`, and their payloads in the component.
+- Nest `UiState`, `News`, `Event`, and their payloads in the component that owns them. Refer to
+  them as `ProfileComponent.UiState`, `ProfileComponent.News`, and `ProfileComponent.Event`; do
+  not create top-level `ProfileUiState`, `ProfileNews`, or `ProfileEvent` types.
 - Keep the public surface minimal and free from broad domain aggregates.
 
 ## Default implementation
@@ -26,8 +28,31 @@ Every component has an `internal Default...Component`.
 interface ProfileComponent {
 
     val uiState: Value<UiState>
+    val news: Flow<News>
 
     fun onEvent(event: Event)
+
+    data class UiState(
+        val error: Error?,
+        val isLoading: Boolean,
+    ) {
+
+        data class Error(
+            val message: StringResource,
+        )
+    }
+
+    sealed interface News {
+
+        data class ShowSnackbar(
+            val message: StringResource,
+        ) : News
+    }
+
+    sealed interface Event {
+
+        data object RetryClicked : Event
+    }
 }
 
 internal class DefaultProfileComponent(

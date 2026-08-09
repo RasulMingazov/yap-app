@@ -17,6 +17,8 @@
 - Depend on use cases only; never inject repositories into a model.
 - Route non-trivial events to named `on...` functions.
 - Handle typed domain outcomes exhaustively.
+- Emit one-shot presentation output through the owning component's `News`; do not store snackbar
+  triggers in `DataState` or `UiState`.
 - Close model-owned channels in `onCleared`; `clear()` invokes it before cancelling `modelScope`.
 
 A model owns loading, retry, and screen errors. Compose owns colors, dimensions, focus, scrolling, and animation progress.

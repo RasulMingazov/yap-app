@@ -15,11 +15,11 @@ Prefer a separate child component for a behavior-rich bottom sheet or dialog. Us
 Keep the complete child slice in one package:
 
 ```text
-signin/
-├── SignInComponent.kt
-├── DefaultSignInComponent.kt  (default component + SignInModel)
-├── SignInUiStateMapper.kt
-└── SignInContent.kt
+login/
+├── LoginComponent.kt
+├── DefaultLoginComponent.kt  (default component + LoginModel)
+├── LoginUiStateMapper.kt
+└── LoginContent.kt
 ```
 
 - Child content receives ready-to-render state and callbacks only.

@@ -1,6 +1,7 @@
 # Shared Contracts
 
 Wire contracts under `shared/contract/*` are shared by mobile and server.
+All Kotlin in this area also follows [Code conventions](../code-conventions.md).
 
 ## Naming
 
