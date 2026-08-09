@@ -4,14 +4,19 @@ import app.yap.server.feature.auth.model.AuthAccount
 import app.yap.server.feature.auth.model.AuthChallenge
 import app.yap.server.feature.auth.model.NewSession
 import app.yap.server.feature.auth.model.ProviderIdentity
+import app.yap.server.feature.auth.model.SessionRotation
+import app.yap.server.feature.auth.model.SessionRotationResult
 import app.yap.server.feature.auth.model.VerifiedIdentity
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.lessEq
 import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
@@ -21,6 +26,12 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 
+/**
+ * The authentication aggregates share one adapter because their invariants are transactional, not
+ * because the class is large: consuming a challenge, resolving an account, and rotating a session
+ * each have to hold their own lock, so splitting them across adapters would split a transaction.
+ */
+@Suppress("TooManyFunctions")
 internal class ExposedAuthRepository(
     private val clock: Clock,
     private val database: Database,
@@ -66,6 +77,11 @@ internal class ExposedAuthRepository(
         account
     }
 
+    /** Its own committed transaction, so an expired row is removed even though no login is running. */
+    override suspend fun deleteExpiredChallenges(): Int = query {
+        ChallengeTable.deleteWhere { ChallengeTable.expiresAt lessEq Instant.now(clock) }
+    }
+
     override suspend fun findChallenge(id: String): AuthChallenge? {
         val challengeId = id.toUuidOrNull() ?: return null
         return query {
@@ -88,6 +104,47 @@ internal class ExposedAuthRepository(
             }
         }
     }
+
+    /**
+     * Locks the session row first, so two refreshes presenting the same credential serialize here
+     * and only the first of them rotates. Expiry is judged by the clock read while the lock is held,
+     * and the presented hash is then compared with the row that lock protects: replay is recognised
+     * by reading the stored previous hash, never by an update that affected no rows.
+     */
+    override suspend fun rotateSession(rotation: SessionRotation): SessionRotationResult = query {
+        val sessionId = rotation.sessionId.toUuidOrNull() ?: return@query SessionRotationResult.Unknown
+        val locked = SessionTable.selectAll()
+            .where { SessionTable.id eq sessionId }
+            .forUpdate()
+            .singleOrNull()
+            ?: return@query SessionRotationResult.Unknown
+
+        val now = Instant.now(clock)
+        if (locked.isSessionExpired(inactivityLimit = rotation.inactivityLimit, now = now)) {
+            return@query SessionRotationResult.Expired
+        }
+
+        val currentHash = locked[SessionTable.refreshTokenHash]
+        if (rotation.presentedTokenHash == currentHash) {
+            SessionTable.update({ SessionTable.id eq sessionId }) {
+                it[refreshTokenHash] = rotation.rotatedTokenHash
+                it[previousTokenHash] = currentHash
+                it[lastUsedAt] = now
+            }
+            return@query SessionRotationResult.Rotated(accountId = locked[SessionTable.accountId].toString())
+        }
+        if (rotation.presentedTokenHash != locked[SessionTable.previousTokenHash]) {
+            return@query SessionRotationResult.Unknown
+        }
+
+        SessionTable.update({ SessionTable.id eq sessionId }) { it[revokedAt] = now }
+        SessionRotationResult.Replayed
+    }
+
+    private fun ResultRow.isSessionExpired(inactivityLimit: Duration, now: Instant): Boolean =
+        this[SessionTable.revokedAt] != null ||
+            !this[SessionTable.absoluteExpiresAt].isAfter(now) ||
+            !this[SessionTable.lastUsedAt].plus(inactivityLimit).isAfter(now)
 
     /**
      * Resolves the account owning [identity] by the unique provider and subject pair, creating one

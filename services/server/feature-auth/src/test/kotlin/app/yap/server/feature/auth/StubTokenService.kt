@@ -14,6 +14,9 @@ internal class StubTokenService(
     hash: String = StubAuth.HASH,
     issuedTokens: IssuedTokens = StubAuthSession.stubIssuedTokens(),
     refreshToken: RefreshToken = StubAuthSession.stubRefreshToken(),
+    rotatedRefreshToken: RefreshToken = StubAuthSession.stubRefreshToken(
+        value = StubAuthSession.ROTATED_REFRESH_TOKEN,
+    ),
 ) : TokenService {
 
     val createChallengeCall = StubCall1.returns<Long, SecurityChallenge>(challenge)
@@ -21,7 +24,7 @@ internal class StubTokenService(
     val hashCall = StubCall1.returns<String, String>(hash)
     val issueTokensCall = StubCall2.returns<SessionIdentity, RefreshToken, IssuedTokens>(issuedTokens)
     val parseRefreshTokenCall = StubCall1.returns<String, RefreshToken>(refreshToken)
-    val rotateRefreshTokenCall = StubCall1.returns<RefreshToken, RefreshToken>(refreshToken)
+    val rotateRefreshTokenCall = StubCall1.returns<RefreshToken, RefreshToken>(rotatedRefreshToken)
 
     override fun createChallenge(ttlSeconds: Long): SecurityChallenge =
         createChallengeCall.invoke(ttlSeconds)

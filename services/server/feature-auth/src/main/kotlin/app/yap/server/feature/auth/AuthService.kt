@@ -1,5 +1,6 @@
 package app.yap.server.feature.auth
 
+import app.yap.server.core.security.RefreshToken
 import app.yap.server.core.security.SessionIdentity
 import app.yap.server.core.security.TokenService
 import app.yap.server.feature.auth.identity.CodeChallenge
@@ -13,6 +14,8 @@ import app.yap.server.feature.auth.model.IssuedSession
 import app.yap.server.feature.auth.model.LoginCredential
 import app.yap.server.feature.auth.model.NewSession
 import app.yap.server.feature.auth.model.ProviderId
+import app.yap.server.feature.auth.model.SessionRotation
+import app.yap.server.feature.auth.model.SessionRotationResult
 import app.yap.server.feature.auth.persistence.AuthRepository
 import java.time.Clock
 import java.time.Duration
@@ -25,6 +28,7 @@ import java.time.Instant
 internal class AuthService(
     private val clock: Clock,
     private val identityVerifiers: IdentityVerifiers,
+    private val refreshTokenTtl: Duration,
     private val repository: AuthRepository,
     private val tokenService: TokenService,
 ) {
@@ -97,6 +101,59 @@ internal class AuthService(
             refreshToken = tokens.refreshToken,
         )
     }
+
+    /**
+     * Rotates the session credentials. The session is located from the presented value itself, which
+     * carries its session ID, so nothing but hashes has to be stored or searched for. The rotated
+     * secret is generated here and only its hash reaches the transaction; it is disclosed to the
+     * caller after the rotation committed, so a rejected attempt returns no usable credential.
+     *
+     * Inactivity, absolute expiry, the hash comparison, and the replay revocation all happen inside
+     * the locked transaction. Every rejection — malformed, unknown, expired, revoked, or replayed —
+     * collapses into [AuthFailure.SessionInvalid].
+     */
+    suspend fun refresh(refreshToken: String): IssuedSession {
+        val presented = parseRefreshToken(refreshToken)
+        val rotated = tokenService.rotateRefreshToken(presented)
+        val result = repository.rotateSession(
+            SessionRotation(
+                inactivityLimit = refreshTokenTtl,
+                presentedTokenHash = tokenService.hash(presented.value),
+                rotatedTokenHash = tokenService.hash(rotated.value),
+                sessionId = presented.sessionId,
+            ),
+        )
+        val accountId = when (result) {
+            is SessionRotationResult.Rotated -> result.accountId
+            is SessionRotationResult.Expired,
+            is SessionRotationResult.Replayed,
+            is SessionRotationResult.Unknown,
+            -> throw AuthFailureException(AuthFailure.SessionInvalid)
+        }
+
+        val tokens = tokenService.issueTokens(
+            session = SessionIdentity(userId = accountId, sessionId = presented.sessionId),
+            refreshToken = rotated,
+        )
+        return IssuedSession(
+            accessToken = tokens.accessToken,
+            accessTokenExpiresAtEpochSeconds = tokens.accessTokenExpiresAtEpochSeconds,
+            accountId = accountId,
+            refreshToken = tokens.refreshToken,
+        )
+    }
+
+    /**
+     * Removes expired challenges in their own committed transaction and returns how many were
+     * removed. A rejected login rolls back, so it never removes anything itself; this scheduled
+     * scenario is the only thing that does.
+     */
+    suspend fun cleanupExpiredChallenges(): Int = repository.deleteExpiredChallenges()
+
+    /** A value that is not a refresh credential at all identifies no session and discloses nothing. */
+    private fun parseRefreshToken(value: String): RefreshToken =
+        runCatching { tokenService.parseRefreshToken(value) }
+            .getOrElse { cause -> throw AuthFailureException(AuthFailure.SessionInvalid, cause) }
 
     /**
      * Rejects a challenge that is already unusable before the provider is contacted at all. This is

@@ -1,5 +1,6 @@
 package app.yap.server.feature.auth
 
+import app.yap.server.core.security.InvalidTokenException
 import app.yap.server.core.security.SessionIdentity
 import app.yap.server.feature.auth.identity.IdentityVerifiers
 import app.yap.server.feature.auth.model.AuthAccount
@@ -9,7 +10,9 @@ import app.yap.server.feature.auth.model.AuthFailureException
 import app.yap.server.feature.auth.model.IssuedChallenge
 import app.yap.server.feature.auth.model.IssuedSession
 import app.yap.server.feature.auth.model.ProviderId
+import app.yap.server.feature.auth.model.SessionRotationResult
 import java.time.Clock
+import java.time.Duration
 import java.time.ZoneOffset
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -364,6 +367,176 @@ class AuthServiceTest {
             assertEquals(expected = AuthFailure.InvalidRequest, actual = failure.failure)
         }
 
+    @Test
+    fun `GIVEN a verified identity token WHEN logging in THEN the session expires absolutely after 180 days`() =
+        runTest {
+            val env = Environment()
+
+            env.service.login(
+                challengeId = StubAuthChallenge.CHALLENGE_ID,
+                credential = StubLoginCredential.stubIdentityToken(),
+                provider = StubAuth.PROVIDER,
+            )
+
+            env.repository.consumeChallengeAndCreateSessionCall.calledWith(
+                StubAuthChallenge.stubAuthChallenge(),
+                StubVerifiedIdentity.stubVerifiedIdentity(),
+                StubAuthSession.stubNewSession(absoluteLifetime = Duration.ofDays(180)),
+            )
+        }
+
+    @Test
+    fun `GIVEN a current refresh value WHEN refreshing THEN the rotated session is returned`() = runTest {
+        val env = Environment()
+
+        val result = env.service.refresh(StubAuthSession.REFRESH_TOKEN)
+
+        assertEquals(
+            expected = IssuedSession(
+                accessToken = StubAuthSession.ACCESS_TOKEN,
+                accessTokenExpiresAtEpochSeconds = StubAuthSession.ACCESS_TOKEN_EXPIRES_AT_EPOCH_SECONDS,
+                accountId = StubAuthAccount.ACCOUNT_ID,
+                refreshToken = StubAuthSession.REFRESH_TOKEN,
+            ),
+            actual = result,
+        )
+    }
+
+    @Test
+    fun `GIVEN a current refresh value WHEN refreshing THEN the rotated credential is issued for the same session`() =
+        runTest {
+            val env = Environment()
+
+            env.service.refresh(StubAuthSession.REFRESH_TOKEN)
+
+            env.tokenService.issueTokensCall.calledWith(
+                SessionIdentity(userId = StubAuthAccount.ACCOUNT_ID, sessionId = StubAuthSession.SESSION_ID),
+                StubAuthSession.stubRefreshToken(value = StubAuthSession.ROTATED_REFRESH_TOKEN),
+            )
+        }
+
+    @Test
+    fun `GIVEN a current refresh value WHEN refreshing THEN the rotation carries only hashes`() = runTest {
+        val env = Environment()
+
+        env.service.refresh(StubAuthSession.REFRESH_TOKEN)
+
+        env.repository.rotateSessionCall.calledWith(StubAuthSession.stubSessionRotation())
+    }
+
+    @Test
+    fun `GIVEN a current refresh value WHEN refreshing THEN the presented and rotated values are hashed`() = runTest {
+        val env = Environment()
+
+        env.service.refresh(StubAuthSession.REFRESH_TOKEN)
+
+        env.tokenService.hashCall.calledWith(StubAuthSession.REFRESH_TOKEN)
+        env.tokenService.hashCall.calledWith(StubAuthSession.ROTATED_REFRESH_TOKEN)
+    }
+
+    @Test
+    fun `GIVEN a session unused for thirty days WHEN refreshing THEN it fails as session invalid`() = runTest {
+        val env = Environment(rotation = SessionRotationResult.Expired)
+
+        val failure = assertFailsWith<AuthFailureException> {
+            env.service.refresh(StubAuthSession.REFRESH_TOKEN)
+        }
+
+        assertEquals(expected = AuthFailure.SessionInvalid, actual = failure.failure)
+    }
+
+    @Test
+    fun `GIVEN a replayed refresh value WHEN refreshing THEN it fails as session invalid`() = runTest {
+        val env = Environment(rotation = SessionRotationResult.Replayed)
+
+        val failure = assertFailsWith<AuthFailureException> {
+            env.service.refresh(StubAuthSession.REFRESH_TOKEN)
+        }
+
+        assertEquals(expected = AuthFailure.SessionInvalid, actual = failure.failure)
+    }
+
+    @Test
+    fun `GIVEN a replayed refresh value WHEN refreshing THEN no credentials are issued`() = runTest {
+        val env = Environment(rotation = SessionRotationResult.Replayed)
+
+        assertFailsWith<AuthFailureException> {
+            env.service.refresh(StubAuthSession.REFRESH_TOKEN)
+        }
+
+        env.tokenService.issueTokensCall.notCalled()
+    }
+
+    @Test
+    fun `GIVEN an unknown refresh value WHEN refreshing THEN it fails as session invalid`() = runTest {
+        val env = Environment(rotation = SessionRotationResult.Unknown)
+
+        val failure = assertFailsWith<AuthFailureException> {
+            env.service.refresh(StubAuthSession.REFRESH_TOKEN)
+        }
+
+        assertEquals(expected = AuthFailure.SessionInvalid, actual = failure.failure)
+    }
+
+    @Test
+    fun `GIVEN an unknown refresh value WHEN refreshing THEN its hash is compared inside the rotation`() = runTest {
+        val env = Environment(rotation = SessionRotationResult.Unknown)
+
+        assertFailsWith<AuthFailureException> {
+            env.service.refresh(StubAuthSession.REFRESH_TOKEN)
+        }
+
+        env.repository.rotateSessionCall.calledWith(StubAuthSession.stubSessionRotation())
+    }
+
+    @Test
+    fun `GIVEN a malformed refresh value WHEN refreshing THEN it fails as session invalid`() = runTest {
+        val env = Environment()
+        env.tokenService.parseRefreshTokenCall.throws(InvalidTokenException())
+
+        val failure = assertFailsWith<AuthFailureException> {
+            env.service.refresh("not-a-refresh-token")
+        }
+
+        assertEquals(expected = AuthFailure.SessionInvalid, actual = failure.failure)
+    }
+
+    @Test
+    fun `GIVEN a malformed refresh value WHEN refreshing THEN no session is rotated`() = runTest {
+        val env = Environment()
+        env.tokenService.parseRefreshTokenCall.throws(InvalidTokenException())
+
+        assertFailsWith<AuthFailureException> {
+            env.service.refresh("not-a-refresh-token")
+        }
+
+        env.repository.rotateSessionCall.notCalled()
+    }
+
+    @Test
+    fun `GIVEN an expired challenge WHEN logging in THEN the rejection deletes no expired row`() = runTest {
+        val env = Environment(challenge = StubAuthChallenge.stubAuthChallenge(expiresAt = StubAuth.NOW))
+
+        assertFailsWith<AuthFailureException> {
+            env.service.login(
+                challengeId = StubAuthChallenge.CHALLENGE_ID,
+                credential = StubLoginCredential.stubIdentityToken(),
+                provider = StubAuth.PROVIDER,
+            )
+        }
+
+        env.repository.deleteExpiredChallengesCall.notCalled()
+    }
+
+    @Test
+    fun `GIVEN expired challenges WHEN cleaning up THEN they are removed in their own transaction`() = runTest {
+        val env = Environment(expiredChallenges = 2)
+
+        val result = env.service.cleanupExpiredChallenges()
+
+        assertEquals(expected = 2, actual = result)
+    }
+
     private companion object {
         val OTHER_PROVIDER = ProviderId("apple")
     }
@@ -371,11 +544,18 @@ class AuthServiceTest {
     private class Environment(
         account: AuthAccount? = StubAuthAccount.stubAuthAccount(),
         challenge: AuthChallenge? = StubAuthChallenge.stubAuthChallenge(),
+        expiredChallenges: Int = 0,
         providerId: ProviderId = ProviderId.Google,
+        rotation: SessionRotationResult = SessionRotationResult.Rotated(StubAuthAccount.ACCOUNT_ID),
         supportsAuthorizationCode: Boolean = true,
     ) {
 
-        val repository = StubAuthRepository(account = account, challenge = challenge)
+        val repository = StubAuthRepository(
+            account = account,
+            challenge = challenge,
+            expiredChallenges = expiredChallenges,
+            rotation = rotation,
+        )
         val tokenService = StubTokenService()
         val verifier = StubIdentityVerifier(
             providerId = providerId,
@@ -384,6 +564,7 @@ class AuthServiceTest {
         val service = AuthService(
             clock = Clock.fixed(StubAuth.NOW, ZoneOffset.UTC),
             identityVerifiers = IdentityVerifiers(verifiers = listOf(verifier)),
+            refreshTokenTtl = StubAuthSession.INACTIVITY_LIMIT,
             repository = repository,
             tokenService = tokenService,
         )

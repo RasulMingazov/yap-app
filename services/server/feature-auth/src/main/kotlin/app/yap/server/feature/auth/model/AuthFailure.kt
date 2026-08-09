@@ -9,9 +9,14 @@ package app.yap.server.feature.auth.model
  *
  * A provider whose configuration is absent is not registered and fails as [ProviderUnavailable].
  * The server has no "coming soon" outcome: provider availability is a client-side concern.
+ *
+ * Every definitive refresh rejection — malformed, unknown, expired, revoked, or replayed session
+ * credentials — collapses into [SessionInvalid], so a response never discloses which one happened
+ * while still telling the client to clear its stored session.
  */
 internal enum class AuthFailure(val code: String) {
     ChallengeInvalid("challenge_invalid"),
     InvalidRequest("invalid_request"),
     ProviderUnavailable("provider_unavailable"),
+    SessionInvalid("session_invalid"),
 }
