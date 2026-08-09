@@ -11,7 +11,7 @@ but no application behavior yet.
 Project-wide governance and focused rules apply to this repo. Read only what is
 relevant to the current change.
 
-- **`.specify/memory/constitution.md`** — project-wide governance: module boundary
+- **`.spec-first/principles.md`** — project-wide governance: module boundary
   isolation, Test-First, convention-plugin-governed build, the Detekt gate,
   Simplicity/YAGNI, and branch naming. Applies to every change.
 - **[`docs/README.md`](docs/README.md)** — top-level documentation routing by area.
@@ -29,10 +29,10 @@ An intentional exception to a documented architecture rule must be justified in 
 PR description or reflected by updating the owning guide. Do not silently work
 around the rule.
 
-When using Spec Kit, read the constitution and relevant `docs/*` guides before
-finalizing `plan.md` or `tasks.md`. Generated feature artifacts refine behavior;
-they do not override project rules. Work in this order:
-`constitution → relevant docs → spec/plan/tasks → implementation → verification`.
+When using `/specf`, read the principles and relevant `docs/*` guides before
+finalizing `plan.md` or `tasks.md`. Feature artifacts refine behavior; they do
+not override project rules. Work in this order:
+`principles → relevant docs → spec/plan/tasks → implementation → verification`.
 
 ## Verification
 
@@ -46,9 +46,9 @@ they do not override project rules. Work in this order:
 
 ## Working tree and Git
 
-Branch names MUST be prefixed by kind, per the constitution: `feature/...` for new
-functionality, `tech/...` for technical/build/tooling changes with no behavior
-change, and `test/...` for test-only changes.
+Branch names MUST be prefixed by kind, per the project principles: `feature/...`
+for new functionality, `tech/...` for technical/build/tooling changes with no
+behavior change, and `test/...` for test-only changes.
 
 Run `git config core.hooksPath .githooks` once per clone — enables the `pre-push`
 hook that blocks pushing Detekt violations.

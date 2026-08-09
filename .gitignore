@@ -13,4 +13,8 @@ DerivedData/
 .env
 .env.*
 local.properties
-.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/specf/
+!.claude/skills/specf/**

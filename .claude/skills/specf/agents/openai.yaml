@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spec First"
+  short_description: "Minimal spec-first development workflow"
+  default_prompt: "Use $specf to turn a request into a specification, plan, implementation, or verification."

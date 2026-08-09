@@ -41,8 +41,8 @@ auth contract.
 ## Documentation
 
 Start with [`docs/README.md`](docs/README.md), then read only the guides relevant
-to the area being changed. Spec Kit configuration and templates live in `.specify`;
-feature artifacts live in `specs`.
+to the area being changed. The minimal `/specf` workflow is configured in
+`.spec-first`; feature artifacts live in `specs`.
 
 ## Build
 
