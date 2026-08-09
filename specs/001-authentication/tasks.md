@@ -38,31 +38,31 @@ no SDK, writes no exchange code, and claims no T-ID verification. Its deferred q
 
 ## Phase 2 — Server challenge issuance and login
 
-- [ ] **T005** Add failing `AuthServiceTest` cases for challenge issuance: a fresh challenge is
+- [x] **T005** Add failing `AuthServiceTest` cases for challenge issuance: a fresh challenge is
   stored with only the nonce hash, the client-supplied `codeChallenge` is persisted verbatim as the
   challenge proof, the TTL is 5 minutes, and an unregistered provider is rejected (R-040, R-041,
   R-096, AC-062)
-- [ ] **T006** Add `model/` values (`ProviderId`, `AuthFailure`, `VerifiedIdentity`, `AuthAccount`,
+- [x] **T006** Add `model/` values (`ProviderId`, `AuthFailure`, `VerifiedIdentity`, `AuthAccount`,
   `ProviderIdentity`) and the `AuthRepository` port
-- [ ] **T007** Add `persistence/` Exposed tables and
+- [x] **T007** Add `persistence/` Exposed tables and
   `services/server/feature-auth/src/main/resources/db/migration/V1__auth.sql` for challenge,
   account, provider identity, and session, including `unique(provider, subject)` and the
   challenge-expiry index
-- [ ] **T008** Implement `AuthService.startChallenge(provider, codeChallenge)` on
+- [x] **T008** Implement `AuthService.startChallenge(provider, codeChallenge)` on
   `TokenService.createChallenge`
-- [ ] **T009** Add failing `GoogleIdentityVerifierTest` cases: bad signature, wrong issuer, wrong
+- [x] **T009** Add failing `GoogleIdentityVerifierTest` cases: bad signature, wrong issuer, wrong
   audience, `azp` when present, expiry, missing `sub`, and nonce mismatch (R-049, R-076)
-- [ ] **T010** Implement `identity/IdentityVerifier` and `GoogleIdentityVerifier` with JWKS
+- [x] **T010** Implement `identity/IdentityVerifier` and `GoogleIdentityVerifier` with JWKS
   verification, the authorization-code exchange path used by the Android fallback, and feature-owned
   provider configuration
-- [ ] **T011** Add failing `AuthServiceTest` cases for login: provider verification happens before
+- [x] **T011** Add failing `AuthServiceTest` cases for login: provider verification happens before
   the transaction opens; the S256 verifier comparison happens before any token exchange; the
   challenge is consumed exactly once; identity and account are resolved or created; and expired,
   mismatched, missing, and proof-mismatched challenges all return the single opaque
   `challenge_invalid` (R-043, R-044, R-045, R-098, AC-063)
-- [ ] **T012** Add a failing test proving a missing or invalid provider configuration fails as a
+- [x] **T012** Add a failing test proving a missing or invalid provider configuration fails as a
   configuration error, never as a "coming soon" outcome (R-024, AC-030)
-- [ ] **T013** Implement `AuthService.login` with the locked-challenge transaction, resolve-or-create
+- [x] **T013** Implement `AuthService.login` with the locked-challenge transaction, resolve-or-create
   identity, session creation, and pre-commit secret hashing (R-047)
 
 ## Phase 3 — Server session lifecycle

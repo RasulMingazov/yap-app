@@ -22,6 +22,16 @@ dependencies {
     implementation(project(":services:server:core-database"))
     implementation(project(":services:server:core-security"))
     implementation(project(":shared:contract:auth"))
+    implementation(libs.auth0.java.jwt)
+    implementation(libs.auth0.jwks.rsa)
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.exposed.java.time)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
+
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.stubcall)
 
     "integrationTestImplementation"(libs.postgresql)
     "integrationTestImplementation"(libs.testcontainers.postgresql)
