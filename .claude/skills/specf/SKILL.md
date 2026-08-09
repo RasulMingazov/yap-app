@@ -58,5 +58,5 @@ NEXT
 
 Replace placeholders with the actual feature and phase. Recommend only a step whose prerequisites
 are satisfied; otherwise use `BLOCKED: <short reason>`.
-For `parallel`, its pre-approval `ACTION` replaces `NEXT`; emit `NEXT` only after executing an
-approved batch.
+For `parallel`, interactive confirmation replaces `NEXT` before approval; emit `NEXT` only after an
+approved batch runs.
