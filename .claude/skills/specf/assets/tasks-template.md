@@ -9,12 +9,7 @@
 - [ ] **T002** Implement the smallest change for [behavior] in `[path]`
 - [ ] **T003** Run `[targeted verification command]`
 
-## Phase 2 — [Next testable outcome]
-
-- [ ] **T004** [Concrete task with path and observable completion condition]
-
 ## Final verification
 
-- [ ] **T005** Run all relevant tests and static analysis
-- [ ] **T006** Compare the implementation with every acceptance criterion
-- [ ] **T007** Update affected project documentation
+- [ ] **T004** Run all relevant tests and static analysis
+- [ ] **T005** Compare the implementation with every acceptance criterion and update affected docs

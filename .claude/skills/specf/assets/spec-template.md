@@ -1,6 +1,5 @@
 # Feature: [NAME]
 
-**Created**: [YYYY-MM-DD]
 **Source**: [Original request or referenced input files]
 
 ## Goal

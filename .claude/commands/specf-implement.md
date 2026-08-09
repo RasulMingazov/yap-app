@@ -4,10 +4,22 @@ argument-hint: "[feature] [--phase N]"
 disable-model-invocation: true
 ---
 
-Read `.claude/skills/specf/SKILL.md` completely and follow it as the authoritative workflow.
+Read `.claude/skills/specf/SKILL.md` completely and apply its shared rules to this operation.
 
-Use these workflow arguments:
+Use `$ARGUMENTS` to resolve the feature and optional `--phase N`.
 
-```text
-implement $ARGUMENTS
-```
+# Execute approved tasks
+
+1. Read all feature artifacts and reconcile checkboxes with reality.
+2. Implement all incomplete tasks or the requested phase in dependency order.
+3. For behavior changes, add a focused failing test, observe the failure, implement the smallest
+   passing change, then refactor while green.
+4. Run focused checks during implementation and the repository-required checks at the end.
+5. Mark tasks complete only after implementation and verification.
+6. Update existing documentation when behavior or architecture changes.
+7. Do not branch or commit unless explicitly requested.
+8. Stop when progress requires changing scope, violating project rules, making an unplanned
+   destructive migration, or choosing between materially different designs.
+9. Report completed and remaining tasks, verification, and deviations. Recommend `parallel` when at
+   least two packets are independently executable, the next incomplete phase otherwise, or `verify`
+   when implementation is complete.
