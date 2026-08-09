@@ -67,13 +67,13 @@ no SDK, writes no exchange code, and claims no T-ID verification. Its deferred q
 
 ## Phase 3 — Server session lifecycle
 
-- [ ] **T014** Add failing `AuthServiceTest` cases for refresh: rotation on success, inactivity
+- [x] **T014** Add failing `AuthServiceTest` cases for refresh: rotation on success, inactivity
   expiry after 30 days, absolute expiry after 180 days, replay of a previous hash revoking the whole
   session, and an unknown value rejected without inferring replay from a zero-row update
   (R-053…R-057)
-- [ ] **T015** Implement `AuthService.refresh` with the locked-session transaction and hash-only
+- [x] **T015** Implement `AuthService.refresh` with the locked-session transaction and hash-only
   storage
-- [ ] **T016** Add a failing test proving a rejection path never deletes an expired row inside a
+- [x] **T016** Add a failing test proving a rejection path never deletes an expired row inside a
   transaction that rolls back, then implement `cleanupExpiredChallenges()` in its own committed
   transaction (R-046)
 
@@ -104,27 +104,27 @@ no SDK, writes no exchange code, and claims no T-ID verification. Its deferred q
 
 ## Phase 5 — Mobile session storage, repository, and attempt lifecycle
 
-- [ ] **T023** Add failing Android storage tests proving an AES-GCM blob in private app storage with
+- [x] **T023** Add failing Android storage tests proving an AES-GCM blob in private app storage with
   its key held in Android Keystore and no `EncryptedSharedPreferences` anywhere in the module
   (R-079, AC-050)
-- [ ] **T024** Add failing iOS storage tests proving a Keychain item written with
+- [x] **T024** Add failing iOS storage tests proving a Keychain item written with
   `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` (AC-050)
-- [ ] **T025** Implement `data/local/SessionStorage` as `expect` plus the Android and iOS actuals
-- [ ] **T026** Add failing `DefaultSessionRepositoryTest` cases for the attempt lifecycle: the
+- [x] **T025** Implement `data/local/SessionStorage` as `expect` plus the Android and iOS actuals
+- [x] **T026** Add failing `DefaultSessionRepositoryTest` cases for the attempt lifecycle: the
   adapter prepares the attempt before the challenge request, only the `codeChallenge` is sent, the
   verifier reaches only the login request, `discard` runs on success, cancellation, and failure, and
   a discarded attempt cannot be reused (R-096…R-100, AC-062, AC-064)
-- [ ] **T027** Add failing `DefaultSessionRepositoryTest` cases for the session: restore a valid
+- [x] **T027** Add failing `DefaultSessionRepositoryTest` cases for the session: restore a valid
   session, coalesce concurrent refreshes into one in-flight call, persist rotated credentials before
   publishing them, clear storage on definitive rejection, preserve it on transient failure, and open
   provisionally when offline (R-058…R-060, R-062, AC-021)
-- [ ] **T028** Add `domain/entity`, `domain/repository`, `data/identity` port types
+- [x] **T028** Add `domain/entity`, `domain/repository`, `data/identity` port types
   (`LoginProviderAdapter`, `PreparedAttempt`, `ProviderCredential`, `ProviderAuthResult`),
   `data/remote/AuthApi` on the existing `NetworkClient`, and `data/mapper`, then implement
   `DefaultSessionRepository`
-- [ ] **T029** Add the use cases (`ObserveSessionUseCase`, `RestoreSessionUseCase`, `LogInUseCase`,
+- [x] **T029** Add the use cases (`ObserveSessionUseCase`, `RestoreSessionUseCase`, `LogInUseCase`,
   `ObserveLoginProvidersUseCase`) with their `Default...UseCase` implementations in the same files
-- [ ] **T030** Add a failing test proving exactly one silent refresh and one retry for a rejected
+- [x] **T030** Add a failing test proving exactly one silent refresh and one retry for a rejected
   authenticated request, then implement `DefaultAccessTokenProvider` over `SessionRepository`
   (R-055, AC-022)
 
