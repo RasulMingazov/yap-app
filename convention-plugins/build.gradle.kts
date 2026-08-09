@@ -42,6 +42,10 @@ gradlePlugin {
             id = "app.yap.compose.multiplatform"
             implementationClass = "app.yap.convention.ComposeMultiplatformPlugin"
         }
+        register("decomposeCompose") {
+            id = "app.yap.decompose.compose"
+            implementationClass = "app.yap.convention.DecomposeComposePlugin"
+        }
         register("jvmLibrary") {
             id = "app.yap.jvm.library"
             implementationClass = "app.yap.convention.JvmLibraryPlugin"

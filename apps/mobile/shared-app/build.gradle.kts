@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 plugins {
     alias(libs.plugins.yap.kmp.library)
     alias(libs.plugins.yap.compose.multiplatform)
+    alias(libs.plugins.yap.decompose.compose)
 }
 
 kotlin {
