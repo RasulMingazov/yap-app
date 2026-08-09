@@ -125,8 +125,8 @@ no SDK, writes no exchange code, and claims no T-ID verification. Its deferred q
 - [x] **T029** Add the use cases (`ObserveSessionUseCase`, `RestoreSessionUseCase`, `LogInUseCase`,
   `ObserveLoginProvidersUseCase`) with their `Default...UseCase` implementations in the same files
 - [x] **T030** Add a failing test proving exactly one silent refresh and one retry for a rejected
-  authenticated request, then implement `DefaultAccessTokenProvider` over `SessionRepository`
-  (R-055, AC-022)
+  authenticated request, then implement the `AccessTokenProvider` port on `DefaultSessionRepository`
+  itself (R-055, AC-022)
 
 ## Phase 6 — Auth orchestration and screen state
 

@@ -89,7 +89,8 @@ operation driven only by definitive refresh rejection (R-059).
 - `apps/mobile/core-network` owns the single Ktor client, `authenticated()`, and
   `installAccessTokenModifier`, which already performs the one-refresh/one-retry cycle on `401`
   (R-055). The single-flight refresh and persistence belong to the `AccessTokenProvider`
-  implementation (`apps/mobile/core-common`, interface only today) that this feature supplies.
+  implementation (`apps/mobile/core-common`, interface only today) that this feature supplies from
+  `DefaultSessionRepository`.
 - `apps/mobile/core-design` has `YapTheme` on default Material 3 color schemes and Inter fonts
   (regular/semibold/bold/black) already bundled as Compose resources.
 - `apps/mobile/android-app` has only an `AndroidManifest.xml` with no activity;
@@ -221,13 +222,18 @@ data class RefreshRequestDto(
 
 @Serializable
 data class ErrorDto(
-    val code: String,                        // "challenge_invalid" | "invalid_request" | "provider_unavailable"
+    val code: String,                        // "challenge_invalid" | "invalid_request" | "provider_unavailable" | "session_invalid"
     val message: String,
 )
 ```
 
 `LoginRequestDto` has no nonce field of any kind: the server never accepts a client-echoed nonce as
 evidence (R-042).
+
+`session_invalid` is the definitive outcome of `POST /auth/refresh` (maps to HTTP 401): it is
+distinct from `challenge_invalid`, which only ever comes from `/auth/challenge` and `/auth/login`.
+An unknown, expired, or reused (`previous_token_hash`) refresh token all resolve to this single
+opaque code, mirroring the same non-disclosure principle already applied to `challenge_invalid`.
 
 Valid combinations, by provider flow:
 
@@ -391,13 +397,18 @@ Tables (Flyway, forward-only):
 3. `refresh(refreshToken)` — parse the session ID, lock the session row, validate inactivity and
    absolute expiry, compare `hash(presented)` with `refresh_token_hash`, move it to
    `previous_token_hash`, and store the rotated hash (R-053, R-056). A value matching
-   `previous_token_hash` revokes the whole session (R-057); an unknown value is a plain rejection and
-   is never inferred from a zero-row update.
+   `previous_token_hash` revokes the whole session (R-057); an unknown, expired, or revoked value all
+   resolve to `AuthFailure.SessionInvalid` (`session_invalid`, HTTP 401) and are never inferred from a
+   zero-row update.
 4. `cleanupExpiredChallenges()` — a separate committed transaction invoked by a scheduled job in
    `app` (R-046).
 
 TTLs: access 15 minutes and refresh 30 days already match `AuthConfig` defaults (R-052, R-053);
 absolute session expiry of 180 days (R-054) is a feature-owned constant persisted per session.
+`services/server/feature-auth` has no dependency on `core-config`, so `AuthService` takes
+`refreshTokenTtl: Duration` as a constructor parameter rather than reading `AuthConfig` itself;
+`services/server/app`'s `Main.kt` reads the refresh TTL from `AuthConfig` and passes it when
+constructing `AuthService`, and is also responsible for scheduling `cleanupExpiredChallenges()`.
 
 `IdentityVerifier` returns `VerifiedIdentity(provider, subject, email, isEmailVerified)`:
 
@@ -497,7 +508,7 @@ apps/mobile/feature-auth/src/commonMain/kotlin/app/yap/feature/auth/
 │                   ObserveLoginProvidersUseCase
 ├── data/
 │   ├── identity/   LoginProviderAdapter, PreparedAttempt, ProviderCredential, adapter registry
-│   ├── local/      SessionStorage (expect/actual), SessionDb
+│   ├── local/      SessionStorage (internal interface, Android/iOS implementations), SessionLocal
 │   ├── mapper/     SessionMapper, LoginFailureMapper
 │   ├── remote/     AuthApi (Ktor), DTO translation
 │   └── repository/ DefaultSessionRepository, DefaultLoginProviderRepository
@@ -516,17 +527,34 @@ apps/mobile/feature-auth/src/commonMain/kotlin/app/yap/feature/auth/
   `LoginProvider(id, displayName, iconToken, isVisible, isEnabled)`, preserved verbatim (R-011,
   AC-040). Platform defaults live in `di` platform source sets — Android hides Apple, iOS shows all
   three; Google enabled, Apple and T-ID disabled (R-016, R-017).
-- `SessionRepository` owns storage and refresh together, because rotation and persistence must stay
-  atomic: `observe(): Flow<Session?>`, `get(forceUpdate: Boolean): Session?`, `logIn(providerId)`,
-  `refresh(rejectedAccessToken)`. Concurrent refreshes are coalesced single-flight, the rotated
-  session is persisted before it becomes observable (R-058), definitive rejection clears storage and
-  publishes signed-out (R-059), and a transient failure preserves the stored session (R-060). The
-  clear-on-rejection path is an internal operation, not a product logout.
-- `DefaultAccessTokenProvider` implements the `core-common` port on top of `SessionRepository` and is
-  installed once through `installAccessTokenModifier`, so no repository implements `401` retry.
-- `SessionStorage` is `expect`/`actual` inside the feature: Android writes an AES-GCM blob to a
-  private-storage file with a key held in Android Keystore (no `EncryptedSharedPreferences`), iOS
-  writes a Keychain item with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` (R-079, AC-050).
+- `LoginProviderId` carries the lowercase wire identifier as an `id` property
+  (`Google("google")`, `Apple("apple")`, `Tid("tid")`) instead of a separate `data/mapper`
+  translation. This is a deliberate exception to
+  [`docs/mobile/domain.md`](../../docs/mobile/domain.md), which keeps serialization concerns out of
+  domain code: the value is a stable product identifier the enum already names, and duplicating it in
+  a mapper bought nothing — exhaustiveness protects a newly added provider either way.
+- `SessionRepository` (domain) owns `observe(): Flow<Session?>`, `get(forceUpdate: Boolean): Session?`,
+  and `logIn(providerId)` only. Per
+  [`docs/mobile/domain.md`](../../docs/mobile/domain.md), a domain repository port exposes no
+  credentials, so `refresh(rejectedAccessToken)` does not live on it. Rotation and persistence still
+  stay atomic: concurrent refreshes are coalesced single-flight, the rotated session is persisted
+  before it becomes observable (R-058), definitive rejection clears storage and publishes signed-out
+  (R-059), and a transient failure preserves the stored session (R-060). The clear-on-rejection path
+  is an internal operation, not a product logout.
+- `DefaultSessionRepository` implements the `core-common` `AccessTokenProvider` port itself, so the
+  credential-facing `getAccessToken(rejectedAccessToken)` lives in the data layer while the domain
+  port stays clean. There is no separate `DefaultAccessTokenProvider` class and no
+  `SessionCredentials` interface: both were pure delegation to the repository that already owns
+  storage and single-flight refresh. It is installed once through `installAccessTokenModifier`
+  (which takes a suspend lambda, so wiring stays `installAccessTokenModifier(repository::getAccessToken)`
+  and introduces no construction cycle), so no repository implements `401` retry.
+- `SessionStorage` is an internal interface with a platform implementation per target, not
+  `expect`/`actual`: the Android implementation needs a `Context`, which an `expect` class cannot
+  carry until the DI container exists in Phase 8. Android writes an AES-GCM blob to a private-storage
+  file with a key held in Android Keystore (no `EncryptedSharedPreferences`), iOS writes a Keychain
+  item with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` (R-079, AC-050). Platform factories
+  (`AndroidSessionStorage`/`KeychainSessionStorage` construction) are wired in `di/` by
+  `createAuthContainer(...)` in Phase 8.
 
 ### Mobile presentation details
 
@@ -570,7 +598,7 @@ reach Kotlin through the adapter port, so no Kotlin/Native cinterop or CocoaPods
 | Server auth feature | `services/server/feature-auth/src/main/kotlin/app/yap/server/feature/auth/`, `.../src/main/resources/db/migration/` | New model, identity verifiers, Exposed persistence, `AuthService`, routes, `V1__auth.sql` |
 | Server integration tests | `services/server/feature-auth/src/integrationTest/kotlin/...`, `services/server/feature-auth/build.gradle.kts` | New `integrationTest` source set and task (see "Gradle verification model") |
 | Server composition | `services/server/app/src/main/kotlin/app/yap/server/` | New `Main.kt`, Ktor plugins, status mapping, `/health`, auth route wiring, challenge-cleanup schedule |
-| Mobile auth feature | `apps/mobile/feature-auth/src/{commonMain,androidMain,iosMain,commonTest,androidUnitTest,androidDeviceTest}/` | New domain, data, adapters, `Auth`/`Login`/`SelectProvider` presentation, DI, tests |
+| Mobile auth feature | `apps/mobile/feature-auth/src/{commonMain,androidMain,iosMain,commonTest,androidHostTest,androidDeviceTest}/` | New domain, data, adapters, `Auth`/`Login`/`SelectProvider` presentation, DI, tests. `androidHostTest` is the AGP 9 name for the JVM-hosted Android unit-test source set (not `androidUnitTest`) |
 | Mobile feature build | `apps/mobile/feature-auth/build.gradle.kts` | Add `core-common`, `core-test`, Decompose, Credential Manager, googleid, Compose resources. No T-ID dependency |
 | Design system | `apps/mobile/core-design/src/{commonMain,androidMain,iosMain}/kotlin/app/yap/core/design/` | Login palette/typography tokens, `rememberReducedMotionEnabled()` |
 | Root composition | `apps/mobile/app-root/src/commonMain/kotlin/app/yap/app/root/` | `AppRootComponent` with `Auth`/`Authenticated` branches, `AuthenticatedComponent`, analytics no-op binding |
@@ -727,6 +755,16 @@ proceed without any of them being answered.
   the hashes before visual verification rather than after.
 - **Secret handling**: credentials, verifiers, nonces, and tokens must never enter state, logs,
   analytics, or test output; assert their absence rather than assuming it (AC-036, AC-037, R-097).
+- **Detekt excludes miss `androidHostTest`**: `config/detekt/detekt.yml` and the `DetektPlugin`
+  convention have no source-set exclude for `androidHostTest` (or the device-test source set).
+  Phase 5 worked around this with narrow `@Suppress` on the affected test files; either add a proper
+  exclude for Android test source sets or keep using targeted `@Suppress`, but do not widen a rule
+  project-wide for a test-only false positive.
+- **`ktor-client-mock` is not pinned in `gradle/libs.versions.toml`**: without it, `DefaultAuthApi`'s
+  protocol-level behavior and the end-to-end `401` single-retry cycle (R-055) are untested at the
+  Ktor client boundary — only through fakes above it. Pin `ktor-client-mock` at the catalog's Ktor
+  version and add that coverage before Phase 6/7 sign-off, or explicitly accept the gap in
+  "Testing strategy".
 
 ## Verification
 
@@ -734,9 +772,11 @@ proceed without any of them being answered.
 - `./gradlew detekt`
 - `./gradlew :services:server:feature-auth:integrationTest` — PostgreSQL 17 Testcontainers suite
 - `./gradlew :apps:mobile:shared-app:compileKotlinIosSimulatorArm64`
-- the `feature-auth` Android device-test task (Compose UI tests on an emulator or device); confirm
-  its exact name from `./gradlew :apps:mobile:feature-auth:tasks` once the device-test source set is
-  configured, because the KMP Android library plugin names it differently from an application module
+- the `feature-auth` Android device-test task (Compose UI tests on an emulator or device); the
+  JVM-hosted Android test source set is `androidHostTest` (AGP 9 naming, confirmed in Phase 5), not
+  `androidUnitTest` — the device-test source/task name still needs confirming from
+  `./gradlew :apps:mobile:feature-auth:tasks` once T043 configures it, since the KMP Android library
+  plugin names it differently from an application module
 - physical-device provider round trips: Google mandatory; Apple passes or is reported as externally
   blocked; T-ID is reported as deferred and is not attempted
 - a build-and-start check with no T-ID credentials, configuration, or SDK present (AC-065)
