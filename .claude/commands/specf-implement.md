@@ -1,5 +1,5 @@
 ---
-description: Реализовать утверждённый план целиком или только выбранную фазу.
+description: Implement an approved plan in full or only the selected phase.
 argument-hint: "[feature] [--phase N]"
 disable-model-invocation: true
 ---

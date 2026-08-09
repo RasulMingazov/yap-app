@@ -1,5 +1,5 @@
 ---
-description: Проверить реализацию относительно спецификации, плана и задач без изменений кода.
+description: Verify implementation against the specification, plan, and tasks without changing code.
 argument-hint: "[feature | path/to/spec.md]"
 disable-model-invocation: true
 ---

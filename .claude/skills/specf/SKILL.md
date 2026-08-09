@@ -1,6 +1,6 @@
 ---
 name: specf
-description: Внутреннее ядро минимального spec-first workflow для проектных команд specf.
+description: Internal instructions shared by the project's minimal spec-first commands.
 disable-model-invocation: true
 user-invocable: false
 ---

@@ -1,5 +1,5 @@
 ---
-description: Создать или обновить спецификацию feature из текста, файла или директории.
+description: Create or update a feature specification from text, a file, or a directory.
 argument-hint: "[описание feature | @file | @directory/]"
 disable-model-invocation: true
 ---
