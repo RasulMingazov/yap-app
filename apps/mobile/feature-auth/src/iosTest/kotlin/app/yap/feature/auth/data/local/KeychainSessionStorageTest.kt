@@ -10,7 +10,7 @@ internal class KeychainSessionStorageTest {
     @Test
     fun `GIVEN a session WHEN writing THEN the keychain item is device-only after first unlock`() = runTest {
         val env = Environment()
-        val session = StubSessionDb.stubSessionDb()
+        val session = StubSessionLocal.stubSessionLocal()
 
         env.storage.write(session)
 
@@ -27,7 +27,7 @@ internal class KeychainSessionStorageTest {
     @Test
     fun `GIVEN a written session WHEN reading THEN the stored session is returned`() = runTest {
         val env = Environment()
-        val session = StubSessionDb.stubSessionDb()
+        val session = StubSessionLocal.stubSessionLocal()
 
         env.storage.write(session)
 
@@ -37,7 +37,7 @@ internal class KeychainSessionStorageTest {
     @Test
     fun `GIVEN a written session WHEN clearing THEN no session remains in the keychain`() = runTest {
         val env = Environment()
-        env.storage.write(StubSessionDb.stubSessionDb())
+        env.storage.write(StubSessionLocal.stubSessionLocal())
 
         env.storage.clear()
 

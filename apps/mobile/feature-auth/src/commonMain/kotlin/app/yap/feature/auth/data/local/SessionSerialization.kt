@@ -10,9 +10,9 @@ internal object SessionSerialization {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun decode(text: String): SessionDb? = runCatching {
-        json.decodeFromString(SessionDb.serializer(), text)
+    fun decode(text: String): SessionLocal? = runCatching {
+        json.decodeFromString(SessionLocal.serializer(), text)
     }.getOrNull()
 
-    fun encode(session: SessionDb): String = json.encodeToString(SessionDb.serializer(), session)
+    fun encode(session: SessionLocal): String = json.encodeToString(SessionLocal.serializer(), session)
 }

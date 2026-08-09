@@ -19,7 +19,7 @@ internal class AesGcmSessionCipherTest {
     @Test
     fun `GIVEN a session blob WHEN encrypting THEN AES-GCM decryption with the same key returns it`() {
         val env = Environment()
-        val plain = SessionSerialization.encode(StubSessionDb.stubSessionDb()).encodeToByteArray()
+        val plain = SessionSerialization.encode(StubSessionLocal.stubSessionLocal()).encodeToByteArray()
 
         val encrypted = env.cipher.encrypt(plain)
 
@@ -32,7 +32,7 @@ internal class AesGcmSessionCipherTest {
     @Test
     fun `GIVEN a session blob WHEN encrypting THEN the blob holds no readable credential`() {
         val env = Environment()
-        val session = StubSessionDb.stubSessionDb()
+        val session = StubSessionLocal.stubSessionLocal()
 
         val encrypted = env.cipher.encrypt(SessionSerialization.encode(session).encodeToByteArray())
 
@@ -46,7 +46,7 @@ internal class AesGcmSessionCipherTest {
     fun `GIVEN a tampered blob WHEN decrypting THEN nothing is returned`() {
         val env = Environment()
         val encrypted = env.cipher.encrypt(
-            SessionSerialization.encode(StubSessionDb.stubSessionDb()).encodeToByteArray(),
+            SessionSerialization.encode(StubSessionLocal.stubSessionLocal()).encodeToByteArray(),
         )
 
         val tampered = encrypted.copyOf().also { it[it.lastIndex] = (it.last() + 1).toByte() }
@@ -57,7 +57,7 @@ internal class AesGcmSessionCipherTest {
     @Test
     fun `GIVEN an encrypted blob WHEN decrypting THEN the original session bytes are returned`() {
         val env = Environment()
-        val plain = SessionSerialization.encode(StubSessionDb.stubSessionDb()).encodeToByteArray()
+        val plain = SessionSerialization.encode(StubSessionLocal.stubSessionLocal()).encodeToByteArray()
 
         val decrypted = env.cipher.decrypt(env.cipher.encrypt(plain))
 

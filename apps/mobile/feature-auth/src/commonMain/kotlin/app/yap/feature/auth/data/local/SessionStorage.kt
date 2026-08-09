@@ -8,7 +8,7 @@ internal interface SessionStorage {
 
     suspend fun clear()
 
-    suspend fun read(): SessionDb?
+    suspend fun read(): SessionLocal?
 
-    suspend fun write(session: SessionDb)
+    suspend fun write(session: SessionLocal)
 }

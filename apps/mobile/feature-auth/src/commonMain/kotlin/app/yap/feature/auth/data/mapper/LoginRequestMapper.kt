@@ -14,7 +14,7 @@ private const val IDENTITY_TOKEN = "identity_token"
 internal fun PreparedAttempt.toChallengeRequest(
     providerId: LoginProviderId,
 ): LoginChallengeRequestDto = LoginChallengeRequestDto(
-    provider = providerId.toWireValue(),
+    provider = providerId.id,
     codeChallenge = codeChallenge,
     codeChallengeMethod = codeChallenge?.let { CODE_CHALLENGE_METHOD_S256 },
 )
@@ -26,7 +26,7 @@ internal fun ProviderCredential.toLoginRequest(
 ): LoginRequestDto = when (this) {
     is ProviderCredential.AuthorizationCode -> LoginRequestDto(
         challengeId = challengeId,
-        provider = providerId.toWireValue(),
+        provider = providerId.id,
         credentialType = AUTHORIZATION_CODE,
         authorizationCode = code,
         codeVerifier = codeVerifier,
@@ -35,7 +35,7 @@ internal fun ProviderCredential.toLoginRequest(
 
     is ProviderCredential.IdentityToken -> LoginRequestDto(
         challengeId = challengeId,
-        provider = providerId.toWireValue(),
+        provider = providerId.id,
         credentialType = IDENTITY_TOKEN,
         idToken = idToken,
     )

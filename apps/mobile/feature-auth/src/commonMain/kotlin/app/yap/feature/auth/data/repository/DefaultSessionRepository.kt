@@ -2,16 +2,17 @@ package app.yap.feature.auth.data.repository
 
 import app.yap.contract.auth.LoginChallengeDto
 import app.yap.contract.auth.RefreshRequestDto
+import app.yap.core.common.network.AccessTokenProvider
 import app.yap.feature.auth.data.identity.LoginProviderAdapter
 import app.yap.feature.auth.data.identity.PreparedAttempt
 import app.yap.feature.auth.data.identity.ProviderAuthResult
 import app.yap.feature.auth.data.identity.ProviderCredential
-import app.yap.feature.auth.data.local.SessionDb
+import app.yap.feature.auth.data.local.SessionLocal
 import app.yap.feature.auth.data.local.SessionStorage
 import app.yap.feature.auth.data.mapper.toChallenge
 import app.yap.feature.auth.data.mapper.toChallengeRequest
-import app.yap.feature.auth.data.mapper.toDb
 import app.yap.feature.auth.data.mapper.toDomain
+import app.yap.feature.auth.data.mapper.toLocal
 import app.yap.feature.auth.data.mapper.toLoginRequest
 import app.yap.feature.auth.data.remote.AuthApi
 import app.yap.feature.auth.data.remote.AuthApiFailureKind
@@ -37,11 +38,11 @@ internal class DefaultSessionRepository(
     private val authApi: AuthApi,
     private val currentTime: CurrentTime,
     private val sessionStorage: SessionStorage,
-) : SessionRepository, SessionCredentials {
+) : SessionRepository, AccessTokenProvider {
 
     private val loadMutex = Mutex()
     private val refreshMutex = Mutex()
-    private val sessionState = MutableStateFlow<SessionDb?>(null)
+    private val sessionState = MutableStateFlow<SessionLocal?>(null)
     private val usedAttemptIds = mutableSetOf<String>()
     private var isLoaded = false
 
@@ -49,15 +50,14 @@ internal class DefaultSessionRepository(
 
     override suspend fun get(forceUpdate: Boolean): Session? {
         val stored = loadedSession() ?: return null
-        val hasExpiredAccess = currentTime.epochSeconds() >= stored.accessTokenExpiresAtEpochSeconds
+        val isRefreshNeeded = forceUpdate &&
+            currentTime.epochSeconds() >= stored.accessTokenExpiresAtEpochSeconds
+        val outcome = if (isRefreshNeeded) refresh(rejectedAccessToken = stored.accessToken) else null
 
-        return when {
-            !forceUpdate || !hasExpiredAccess -> stored.toDomain()
-            else -> when (val outcome = refresh(rejectedAccessToken = stored.accessToken)) {
-                is RefreshOutcome.Cleared -> null
-                is RefreshOutcome.Preserved -> stored.toDomain()
-                is RefreshOutcome.Rotated -> outcome.session.toDomain()
-            }
+        return when (outcome) {
+            null, is RefreshOutcome.Preserved -> stored.toDomain()
+            is RefreshOutcome.Cleared -> null
+            is RefreshOutcome.Rotated -> outcome.session.toDomain()
         }
     }
 
@@ -73,14 +73,19 @@ internal class DefaultSessionRepository(
         }
     }
 
-    override suspend fun accessToken(): String? = loadedSession()?.accessToken
+    /**
+     * Supplies the token for `authenticated()` requests. A rejected token triggers one silent
+     * refresh, shared with any concurrent caller; returning `null` stops the shared modifier from
+     * retrying again (R-055, AC-022).
+     */
+    override suspend fun getAccessToken(rejectedAccessToken: String?): String? {
+        val rejected = rejectedAccessToken ?: return loadedSession()?.accessToken
 
-    override suspend fun refreshedAccessToken(rejectedAccessToken: String): String? =
-        when (val outcome = refresh(rejectedAccessToken = rejectedAccessToken)) {
-            is RefreshOutcome.Cleared -> null
-            is RefreshOutcome.Preserved -> null
+        return when (val outcome = refresh(rejectedAccessToken = rejected)) {
+            is RefreshOutcome.Cleared, is RefreshOutcome.Preserved -> null
             is RefreshOutcome.Rotated -> outcome.session.accessToken
         }
+    }
 
     private suspend fun runAttempt(
         adapter: LoginProviderAdapter,
@@ -129,7 +134,7 @@ internal class DefaultSessionRepository(
         return when (val loginResult = authApi.login(request)) {
             is AuthApiResult.Failure -> LoginOutcome.Failure(reason = loginResult.kind.toDomain())
             is AuthApiResult.Success -> {
-                val session = loginResult.value.toDb()
+                val session = loginResult.value.toLocal()
                 persist(session)
                 LoginOutcome.Success(session = session.toDomain())
             }
@@ -153,14 +158,14 @@ internal class DefaultSessionRepository(
             }
 
             is AuthApiResult.Success -> {
-                val rotated = result.value.toDb()
+                val rotated = result.value.toLocal()
                 persist(rotated)
                 RefreshOutcome.Rotated(rotated)
             }
         }
     }
 
-    private suspend fun loadedSession(): SessionDb? = loadMutex.withLock {
+    private suspend fun loadedSession(): SessionLocal? = loadMutex.withLock {
         if (!isLoaded) {
             sessionState.value = sessionStorage.read()
             isLoaded = true
@@ -168,7 +173,7 @@ internal class DefaultSessionRepository(
         sessionState.value
     }
 
-    private suspend fun persist(session: SessionDb) {
+    private suspend fun persist(session: SessionLocal) {
         sessionStorage.write(session)
         isLoaded = true
         sessionState.value = session
@@ -180,6 +185,6 @@ internal class DefaultSessionRepository(
 
         data object Preserved : RefreshOutcome
 
-        data class Rotated(val session: SessionDb) : RefreshOutcome
+        data class Rotated(val session: SessionLocal) : RefreshOutcome
     }
 }

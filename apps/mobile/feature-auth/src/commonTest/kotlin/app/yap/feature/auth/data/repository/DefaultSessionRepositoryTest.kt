@@ -1,8 +1,8 @@
 package app.yap.feature.auth.data.repository
 
 import app.yap.feature.auth.data.identity.StubLoginProviderAdapter
-import app.yap.feature.auth.data.local.SessionDb
-import app.yap.feature.auth.data.local.StubSessionDb
+import app.yap.feature.auth.data.local.SessionLocal
+import app.yap.feature.auth.data.local.StubSessionLocal
 import app.yap.feature.auth.data.local.StubSessionStorage
 import app.yap.feature.auth.data.remote.AuthApiFailureKind
 import app.yap.feature.auth.data.remote.AuthApiResult
@@ -32,13 +32,13 @@ internal class DefaultSessionRepositoryTest {
     fun `GIVEN a stored session with valid access WHEN restoring THEN it is restored without a refresh`() = runTest {
         val env = Environment(
             nowEpochSeconds = VALID_NOW_EPOCH_SECONDS,
-            storedSession = StubSessionDb.stubSessionDb(),
+            storedSession = StubSessionLocal.stubSessionLocal(),
         )
 
         val session = env.repository.get(forceUpdate = true)
 
         assertEquals(
-            expected = Session(accountId = AccountId(StubSessionDb.ACCOUNT_ID)),
+            expected = Session(accountId = AccountId(StubSessionLocal.ACCOUNT_ID)),
             actual = session,
         )
         env.authApi.refreshCall.notCalled()
@@ -48,7 +48,7 @@ internal class DefaultSessionRepositoryTest {
     fun `GIVEN expired access WHEN two callers restore at once THEN one refresh is performed`() = runTest {
         val env = Environment(
             nowEpochSeconds = EXPIRED_NOW_EPOCH_SECONDS,
-            storedSession = StubSessionDb.stubSessionDb(),
+            storedSession = StubSessionLocal.stubSessionLocal(),
         )
 
         awaitAll(
@@ -63,7 +63,7 @@ internal class DefaultSessionRepositoryTest {
     fun `GIVEN expired access WHEN the refresh succeeds THEN rotated credentials are stored before they are published`() = runTest {
         val env = Environment(
             nowEpochSeconds = EXPIRED_NOW_EPOCH_SECONDS,
-            storedSession = StubSessionDb.stubSessionDb(),
+            storedSession = StubSessionLocal.stubSessionLocal(),
         )
         val writesAtEmission = mutableListOf<Int>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -79,7 +79,7 @@ internal class DefaultSessionRepositoryTest {
     fun `GIVEN a definitively rejected refresh WHEN restoring THEN the stored session is cleared`() = runTest {
         val env = Environment(
             nowEpochSeconds = EXPIRED_NOW_EPOCH_SECONDS,
-            storedSession = StubSessionDb.stubSessionDb(),
+            storedSession = StubSessionLocal.stubSessionLocal(),
         )
         env.authApi.refreshCall.returns(AuthApiResult.Failure(kind = AuthApiFailureKind.Rejected))
 
@@ -93,7 +93,7 @@ internal class DefaultSessionRepositoryTest {
     fun `GIVEN a transient refresh failure WHEN restoring THEN the stored session is preserved`() = runTest {
         val env = Environment(
             nowEpochSeconds = EXPIRED_NOW_EPOCH_SECONDS,
-            storedSession = StubSessionDb.stubSessionDb(),
+            storedSession = StubSessionLocal.stubSessionLocal(),
         )
         env.authApi.refreshCall.returns(AuthApiResult.Failure(kind = AuthApiFailureKind.Unavailable))
 
@@ -106,21 +106,21 @@ internal class DefaultSessionRepositoryTest {
     fun `GIVEN an offline start WHEN restoring THEN the stored session opens provisionally`() = runTest {
         val env = Environment(
             nowEpochSeconds = EXPIRED_NOW_EPOCH_SECONDS,
-            storedSession = StubSessionDb.stubSessionDb(),
+            storedSession = StubSessionLocal.stubSessionLocal(),
         )
         env.authApi.refreshCall.returns(AuthApiResult.Failure(kind = AuthApiFailureKind.Unavailable))
 
         val session = env.repository.get(forceUpdate = true)
 
         assertEquals(
-            expected = Session(accountId = AccountId(StubSessionDb.ACCOUNT_ID)),
+            expected = Session(accountId = AccountId(StubSessionLocal.ACCOUNT_ID)),
             actual = session,
         )
     }
 
     @Test
     fun `GIVEN a stored session WHEN only observing THEN no storage read is started`() = runTest {
-        val env = Environment(storedSession = StubSessionDb.stubSessionDb())
+        val env = Environment(storedSession = StubSessionLocal.stubSessionLocal())
 
         val session = env.repository.observe().first()
 
@@ -141,7 +141,7 @@ internal class DefaultSessionRepositoryTest {
 
     private class Environment(
         nowEpochSeconds: Long = VALID_NOW_EPOCH_SECONDS,
-        storedSession: SessionDb? = null,
+        storedSession: SessionLocal? = null,
     ) {
 
         val adapter = StubLoginProviderAdapter()

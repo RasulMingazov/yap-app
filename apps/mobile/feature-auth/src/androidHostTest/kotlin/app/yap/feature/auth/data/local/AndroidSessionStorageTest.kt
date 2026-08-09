@@ -21,7 +21,7 @@ internal class AndroidSessionStorageTest {
     @Test
     fun `GIVEN a written session WHEN reading THEN the stored session is returned`() = runTest {
         val env = Environment(storageDirectory = storageDirectory)
-        val session = StubSessionDb.stubSessionDb()
+        val session = StubSessionLocal.stubSessionLocal()
 
         env.storage.write(session)
 
@@ -31,7 +31,7 @@ internal class AndroidSessionStorageTest {
     @Test
     fun `GIVEN a written session WHEN inspecting private storage THEN only ciphertext is on disk`() = runTest {
         val env = Environment(storageDirectory = storageDirectory)
-        val session = StubSessionDb.stubSessionDb()
+        val session = StubSessionLocal.stubSessionLocal()
 
         env.storage.write(session)
 
@@ -44,7 +44,7 @@ internal class AndroidSessionStorageTest {
     @Test
     fun `GIVEN a written session WHEN clearing THEN no session remains in private storage`() = runTest {
         val env = Environment(storageDirectory = storageDirectory)
-        env.storage.write(StubSessionDb.stubSessionDb())
+        env.storage.write(StubSessionLocal.stubSessionLocal())
 
         env.storage.clear()
 

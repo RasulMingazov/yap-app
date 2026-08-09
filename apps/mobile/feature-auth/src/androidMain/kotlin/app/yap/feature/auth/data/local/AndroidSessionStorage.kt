@@ -16,14 +16,14 @@ internal class AndroidSessionStorage(
         withContext(Dispatchers.IO) { file.delete() }
     }
 
-    override suspend fun read(): SessionDb? = withContext(Dispatchers.IO) {
+    override suspend fun read(): SessionLocal? = withContext(Dispatchers.IO) {
         if (!file.exists()) return@withContext null
 
         val decrypted = cipher.decrypt(file.readBytes()) ?: return@withContext null
         SessionSerialization.decode(decrypted.decodeToString())
     }
 
-    override suspend fun write(session: SessionDb) {
+    override suspend fun write(session: SessionLocal) {
         withContext(Dispatchers.IO) {
             file.parentFile?.mkdirs()
             val plain = SessionSerialization.encode(session).encodeToByteArray()

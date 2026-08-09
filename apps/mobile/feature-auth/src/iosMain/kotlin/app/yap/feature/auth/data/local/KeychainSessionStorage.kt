@@ -17,12 +17,12 @@ internal class KeychainSessionStorage(
         keychain.delete(query)
     }
 
-    override suspend fun read(): SessionDb? {
+    override suspend fun read(): SessionLocal? {
         val stored = keychain.read(query) ?: return null
         return SessionSerialization.decode(stored)
     }
 
-    override suspend fun write(session: SessionDb) {
+    override suspend fun write(session: SessionLocal) {
         keychain.write(query, SessionSerialization.encode(session))
     }
 }
