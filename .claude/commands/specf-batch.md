@@ -12,11 +12,13 @@ Use `$ARGUMENTS` to resolve the feature and optional `--active-phase N` and `--m
 
 ## Analyze
 
-1. Read all feature artifacts, `.claude/agents/specf-coordinator.md`,
-   `.claude/agents/specf-worker.md`, implementation evidence, status, `HEAD`, and upstream state.
+1. Run `.claude/skills/specf/scripts/status.sh <feature>` for task/phase state, `HEAD`, and dirty
+   status. Read `.claude/agents/specf-coordinator.md`, `.claude/agents/specf-worker.md`, and
+   implementation evidence; read `spec.md`/`plan.md` sections only for the phases under
+   consideration, not in full.
 2. Parse optional `--active-phase N` and `--max-workers N`. Default to two workers and never exceed
    three. Treat an active phase as unavailable; do not infer completion from partial files.
-3. Reconcile task markers in memory, then group remaining work into coherent packets. Prefer whole
+3. Group remaining work into coherent packets from the status script's phase/task data. Prefer whole
    phases. Split only independently verifiable work with disjoint paths; never split a test from the
    behavior it defines.
 4. Derive dependencies from consumed outputs, contracts, migrations, behavior, and paths. Phase
@@ -108,4 +110,4 @@ authorizes changes.
 4. Review and integrate acceptable commits, apply coordinator-owned changes, run combined checks,
    and mark only verified tasks complete.
 5. Report commits, verification, blockers, and final branch state. Never push without a separate
-   request. Recommend another parallel batch, the next sequential phase, or verification.
+   request. Recommend another batch, the next sequential phase, or verification.

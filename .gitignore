@@ -16,11 +16,11 @@ local.properties
 .claude/*
 !.claude/commands/
 .claude/commands/*
-!.claude/commands/specf-spec.md
+!.claude/commands/specf-specify.md
 !.claude/commands/specf-plan.md
 !.claude/commands/specf-implement.md
 !.claude/commands/specf-verify.md
-!.claude/commands/specf-parallel.md
+!.claude/commands/specf-batch.md
 !.claude/agents/
 !.claude/agents/*.md
 !.claude/skills/
