@@ -13,14 +13,13 @@ $ARGUMENTS
 
 ## Start every operation
 
-1. Read `.spec-first/config.yml` completely.
-2. Read every existing file listed under `context.always`.
-3. Follow routing instructions found in those files, then resolve additional relevant documentation through `context.routes`; read only areas touched by the request.
-4. Inspect the working tree before writing. Preserve unrelated and user-owned changes.
-5. Parse the first argument as one of `spec`, `plan`, `implement`, or `verify`.
-6. If the operation is missing or unknown, show the usage examples and stop without writing files.
+1. Read `CLAUDE.md` and `docs/README.md` completely.
+2. Follow their routing instructions and read only the additional `docs/*` guides relevant to the affected area.
+3. Inspect the working tree before writing. Preserve unrelated and user-owned changes.
+4. Parse the first argument as one of `spec`, `plan`, `implement`, or `verify`.
+5. If the operation is missing or unknown, show the usage examples and stop without writing files.
 
-Write generated artifacts and user-facing reports in the configured `language`. Preserve identifiers, code, paths, commands, and established technical terms in their native form.
+Write generated artifacts and user-facing reports in Russian unless the user requests another language. Preserve identifiers, code, paths, commands, and established technical terms in their native form.
 
 Use native `@file` and `@directory/` mentions as input context. Also accept explicit repository-relative paths. Treat all remaining free-form arguments as additional instructions.
 
@@ -29,7 +28,7 @@ Use native `@file` and `@directory/` mentions as input context. Also accept expl
 Resolve in this order:
 
 1. An explicitly referenced `spec.md`, `plan.md`, `tasks.md`, or feature directory.
-2. An explicit feature slug or name under the configured `paths.specs` directory.
+2. An explicit feature slug or name under the `specs` directory.
 3. For `spec` only, derive a short lowercase kebab-case slug from the request title or goal.
 
 Do not invent numeric prefixes. Do not infer an existing feature when multiple candidates match; ask for the feature name or path.
@@ -37,13 +36,13 @@ Do not invent numeric prefixes. Do not infer an existing feature when multiple c
 Keep feature artifacts together:
 
 ```text
-<paths.specs>/<feature-slug>/
+specs/<feature-slug>/
 ├── spec.md
 ├── plan.md
 └── tasks.md
 ```
 
-Do not create checklist, research, quickstart, memory, evolution, continuation, or verification-report files. Create an optional artifact only when `config.yml` permits it and it is part of the product contract or implementation, not process narration. Treat the operation-specific artifact lists in `config.yml` as the allowed default outputs, not permission to violate the ownership rules below.
+Do not create checklist, research, quickstart, memory, evolution, continuation, or verification-report files. Create contracts or migrations only when they are part of the product or implementation, not as process narration. The only default workflow artifacts are `spec.md`, `plan.md`, and `tasks.md`.
 
 ## Preserve artifact ownership
 
@@ -64,7 +63,7 @@ Example:
 
 1. Read all referenced input files and additional instructions.
 2. Inspect existing behavior when working in a brownfield area.
-3. Ask questions only for ambiguity that materially changes scope, observable behavior, security, privacy, or irreversible data decisions. Respect `clarification.max_questions`.
+3. Ask no more than three questions, and only for ambiguity that materially changes scope, observable behavior, security, privacy, or irreversible data decisions.
 4. Make reasonable defaults for non-blocking gaps and record them under Assumptions.
 5. Use `${CLAUDE_SKILL_DIR}/assets/spec-template.md` to create `<feature-dir>/spec.md`.
 6. Describe what and why. Exclude implementation details, class names, frameworks, tables, and algorithms unless they are externally imposed constraints.
@@ -110,10 +109,10 @@ Examples:
 2. Reconcile task checkboxes with the actual working tree before continuing. Never trust progress markers blindly.
 3. Execute all incomplete tasks, or only the requested phase.
 4. For each behavior change, follow the project's test-first rule: add a focused failing test, observe the expected failure, implement the smallest passing change, then refactor while green.
-5. Run targeted checks after each coherent task and the configured broader checks at the end of the requested scope.
+5. Run targeted checks after each coherent task and the broader checks required by `CLAUDE.md` at the end of the requested scope.
 6. Mark a task complete only after its code and required verification are complete.
 7. Update existing project documentation when the implementation changes documented behavior or architecture. Do not create process-memory files.
-8. Do not create branches or commits unless the user explicitly asks; honor `git.auto_branch` and `git.auto_commit` as hard upper bounds, not authorization.
+8. Do not create branches or commits unless the user explicitly asks.
 9. Stop and report when implementation requires changing scope, violating project rules, making an unplanned destructive migration, or choosing between materially different designs.
 10. Report completed tasks, remaining tasks, verification results, and any deviations.
 
@@ -129,7 +128,7 @@ Example:
 2. Inspect the implementation and diff without changing them.
 3. Map every acceptance criterion to concrete implementation and test evidence.
 4. Check for missing behavior, behavior outside scope, architectural violations, stale documentation, incomplete tasks, and unjustified plan deviations.
-5. Run the relevant commands from `verification.commands`. Run conditional commands only when their stated area is affected.
+5. Run the relevant verification commands from `CLAUDE.md`: use `./gradlew build` for a repository-wide check, Detekt for Kotlin changes, and the iOS compilation command when the KMP boundary changes.
 6. Report results in chat only using:
 
 ```text
