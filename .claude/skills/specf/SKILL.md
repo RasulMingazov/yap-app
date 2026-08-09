@@ -1,6 +1,8 @@
 ---
 name: specf
-description: Run the repository's minimal spec-first workflow. Use when the user invokes /specf to turn free-form text or referenced files into a feature specification, create an implementation plan and task list, implement an approved plan, or verify code against the specification. Supports spec, plan, implement, and verify operations.
+description: Внутреннее ядро минимального spec-first workflow для проектных команд specf.
+disable-model-invocation: true
+user-invocable: false
 ---
 
 # Spec First
@@ -58,14 +60,14 @@ If a downstream operation discovers a requirements or design conflict, report it
 Example:
 
 ```text
-/specf spec @feature-request.md
+/specf-spec @feature-request.md
 ```
 
 1. Read all referenced input files and additional instructions.
 2. Inspect existing behavior when working in a brownfield area.
 3. Ask no more than three questions, and only for ambiguity that materially changes scope, observable behavior, security, privacy, or irreversible data decisions.
 4. Make reasonable defaults for non-blocking gaps and record them under Assumptions.
-5. Use `${CLAUDE_SKILL_DIR}/assets/spec-template.md` to create `<feature-dir>/spec.md`.
+5. Use `.claude/skills/specf/assets/spec-template.md` to create `<feature-dir>/spec.md`.
 6. Describe what and why. Exclude implementation details, class names, frameworks, tables, and algorithms unless they are externally imposed constraints.
 7. Make every acceptance criterion objectively verifiable.
 8. Validate the specification internally for scope, contradictions, ambiguity, primary flows, negative flows, and edge cases. Fix the specification directly; do not persist a checklist.
@@ -79,14 +81,14 @@ When updating an existing specification, preserve stable requirement and accepta
 Example:
 
 ```text
-/specf plan authentication
+/specf-plan authentication
 ```
 
 1. Resolve and read `spec.md`.
 2. Read relevant project documentation and inspect the affected implementation.
 3. Stop if the specification is missing, materially ambiguous, or conflicts with project rules.
-4. Use `${CLAUDE_SKILL_DIR}/assets/plan-template.md` to create `plan.md`.
-5. Use `${CLAUDE_SKILL_DIR}/assets/tasks-template.md` to create `tasks.md`.
+4. Use `.claude/skills/specf/assets/plan-template.md` to create `plan.md`.
+5. Use `.claude/skills/specf/assets/tasks-template.md` to create `tasks.md`.
 6. Keep the design minimal and aligned with current architecture. Do not introduce speculative abstractions or unrelated cleanup.
 7. Identify affected modules and exact paths when evidence supports them. Do not fabricate paths or symbols.
 8. Include contract, persistence, migration, security, documentation, and compatibility impact only when relevant.
@@ -101,8 +103,8 @@ Invoking `implement` after reviewing these artifacts is the user's approval gate
 Examples:
 
 ```text
-/specf implement authentication
-/specf implement authentication --phase 2
+/specf-implement authentication
+/specf-implement authentication --phase 2
 ```
 
 1. Resolve and read `spec.md`, `plan.md`, and `tasks.md`.
@@ -121,7 +123,7 @@ Examples:
 Example:
 
 ```text
-/specf verify authentication
+/specf-verify authentication
 ```
 
 1. Resolve and read `spec.md`, `plan.md`, and `tasks.md`.
@@ -144,10 +146,10 @@ OVERALL: PASS|WARN|FAIL
 ## Usage
 
 ```text
-/specf spec @feature-request.md
-/specf spec Add login by email and password
-/specf plan authentication
-/specf implement authentication
-/specf implement authentication --phase 2
-/specf verify authentication
+/specf-spec @feature-request.md
+/specf-spec Add login by email and password
+/specf-plan authentication
+/specf-implement authentication
+/specf-implement authentication --phase 2
+/specf-verify authentication
 ```

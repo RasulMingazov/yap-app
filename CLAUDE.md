@@ -26,7 +26,7 @@ An intentional exception to a documented architecture rule must be justified in 
 PR description or reflected by updating the owning guide. Do not silently work
 around the rule.
 
-When using `/specf`, read the relevant `docs/*` guides before finalizing
+When using a `/specf-*` command, read the relevant `docs/*` guides before finalizing
 `plan.md` or `tasks.md`. Feature artifacts refine behavior; they do not override
 project rules. Work in this order:
 `relevant docs → spec/plan/tasks → implementation → verification`.

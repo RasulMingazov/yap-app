@@ -14,6 +14,12 @@ DerivedData/
 .env.*
 local.properties
 .claude/*
+!.claude/commands/
+.claude/commands/*
+!.claude/commands/specf-spec.md
+!.claude/commands/specf-plan.md
+!.claude/commands/specf-implement.md
+!.claude/commands/specf-verify.md
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/specf/

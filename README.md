@@ -41,8 +41,8 @@ auth contract.
 ## Documentation
 
 Start with [`docs/README.md`](docs/README.md), then read only the guides relevant
-to the area being changed. The minimal `/specf` workflow lives in the project-local
-Claude skill; feature artifacts live in `specs`.
+to the area being changed. The minimal `/specf-*` commands use a project-local
+Claude workflow; feature artifacts live in `specs`.
 
 ## Build
 
