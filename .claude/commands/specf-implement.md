@@ -10,7 +10,9 @@ Use `$ARGUMENTS` to resolve the feature and optional `--phase N`.
 
 # Execute approved tasks
 
-1. Read all feature artifacts and reconcile checkboxes with reality.
+1. Run `.claude/skills/specf/scripts/status.sh <feature>` for incomplete task IDs per phase and
+   current `HEAD`/dirty state, then read `spec.md`/`plan.md`/`tasks.md` and reconcile checkboxes
+   with reality.
 2. Implement all incomplete tasks or the requested phase in dependency order.
 3. For behavior changes, add a focused failing test, observe the failure, implement the smallest
    passing change, then refactor while green.
@@ -20,6 +22,6 @@ Use `$ARGUMENTS` to resolve the feature and optional `--phase N`.
 7. Do not branch or commit unless explicitly requested.
 8. Stop when progress requires changing scope, violating project rules, making an unplanned
    destructive migration, or choosing between materially different designs.
-9. Report completed and remaining tasks, verification, and deviations. Recommend `parallel` when at
+9. Report completed and remaining tasks, verification, and deviations. Recommend `batch` when at
    least two packets are independently executable, the next incomplete phase otherwise, or `verify`
    when implementation is complete.

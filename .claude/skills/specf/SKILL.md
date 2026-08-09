@@ -36,20 +36,42 @@ or verification reports. Create contracts and migrations only when the product n
 
 ## Ownership
 
-- `spec` changes only `spec.md`.
+- `specify` changes only `spec.md`.
 - `plan` changes only `plan.md` and `tasks.md`.
 - `implement` changes implementation, tests, relevant docs, and verified task markers; never
   `spec.md` or `plan.md`.
 - `verify` is read-only unless the request also asks for fixes.
-- `parallel` is read-only until the user approves a batch.
+- `batch` is read-only until the user approves a batch.
 
 Stop instead of silently rewriting an upstream artifact when a downstream operation finds a
 requirements or design conflict.
 
+## Scoped reads
+
+`spec.md` and `plan.md` grow large on real features. Reading either in full is required only for
+`specify`, `plan`, and `verify` — those operations need the whole picture and correctness there
+matters more than cost.
+
+Everywhere else (`implement` on a single phase, delegated `specf-worker` packets, `batch` readiness
+checks), read only what the operation needs:
+
+- Prefer a section by heading boundary over a fixed line window:
+  `sed -n '/^### R-042/,/^### /p' plan.md` extracts exactly one requirement, never truncated or
+  padded with unrelated text.
+- Use `.claude/skills/specf/scripts/status.sh <feature>` for task/phase/HEAD bookkeeping (which docs
+  exist, which task IDs are incomplete per phase, branch and dirty state) instead of reading
+  `tasks.md` in full to reconcile markers.
+- When delegating, inline the relevant task text and `R-`/`AC-` ID text directly in the
+  instruction instead of telling the reader to open the full artifact (see
+  `specf-coordinator.md`/`specf-worker.md`).
+
 ## Recommend the next step
 
 End each successful operation with exactly one context-aware recommendation using the resolved
-feature slug:
+feature slug. Prefer the interactive question tool when available, offering the recommended
+`/specf-*` command as an `Apply` choice alongside `Change` and, when a step is optional, `Skip` —
+the same pattern `batch` already uses for its own confirmation. Fall back to plain text only when
+the question tool is unavailable:
 
 ```text
 NEXT
@@ -58,5 +80,5 @@ NEXT
 
 Replace placeholders with the actual feature and phase. Recommend only a step whose prerequisites
 are satisfied; otherwise use `BLOCKED: <short reason>`.
-For `parallel`, interactive confirmation replaces `NEXT` before approval; emit `NEXT` only after an
-approved batch runs.
+For `batch`, interactive confirmation replaces `NEXT` before approval; emit `NEXT` (or the
+equivalent interactive choice) only after an approved batch runs.

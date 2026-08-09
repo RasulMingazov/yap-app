@@ -23,14 +23,20 @@ only when one worker owns the complete change. Workers must not edit coordinator
 - Parallelize only packets whose paths and behavioral dependencies are independent.
 - Give each worker the exact feature, phase, task IDs, allowed paths, required baseline, and focused
   verification commands.
+- Inline the assignment instead of pointing at it: paste the exact task lines from `tasks.md` and the
+  full text of only the `R-`/`AC-` IDs those tasks reference. Do not tell a worker to read `spec.md`
+  or `plan.md` in full — a worker re-reads the full artifact only if it hits an ID that is not in its
+  excerpt (see `specf-worker.md`).
 - Do not send two workers into the same files or into a test-first test/implementation dependency.
 - Prefer two workers and never exceed the approved maximum of three.
 - Do not use parallel workers when the current `HEAD` does not contain the baseline they require.
 
 ## Integration workflow
 
-1. Inspect the repository status and current `HEAD` before delegation. Do not hide or overwrite
-   unrelated user changes. If workers cannot start from a committed baseline, stop and report it.
+1. Inspect the repository status and current `HEAD` before delegation. Run
+   `.claude/skills/specf/scripts/status.sh <feature>` for task/phase/HEAD bookkeeping instead of
+   reading `tasks.md` in full just to reconcile markers. Do not hide or overwrite unrelated user
+   changes. If workers cannot start from a committed baseline, stop and report it.
 2. Spawn independent workers in parallel with worktree isolation.
 3. Require each worker to test, review, commit, and return its commit hash and completed task IDs.
 4. Inspect each commit before integration. Reject unrelated, speculative, generated, or secret files.

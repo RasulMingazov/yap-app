@@ -10,7 +10,8 @@ Use `$ARGUMENTS` to resolve the feature or `spec.md` path.
 
 # Compare reality with intent
 
-1. Read all feature artifacts and inspect implementation and diff without editing.
+1. Run `.claude/skills/specf/scripts/status.sh <feature>` for task/phase state, then read all
+   feature artifacts and inspect implementation and diff without editing.
 2. Map every acceptance criterion to concrete implementation and test evidence.
 3. Check missing or extra behavior, architectural violations, stale docs, task drift, and unjustified
    plan deviations.

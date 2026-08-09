@@ -16,7 +16,11 @@ Implement only the packet assigned by the coordinator.
 
 ## Workflow
 
-1. Read the assigned artifacts, project instructions, and relevant guides.
+1. Use the task text and requirement/acceptance excerpts inlined in your assignment. Do not read
+   `spec.md`, `plan.md`, or `tasks.md` in full — only open one of them if the assignment references
+   an `R-`/`AC-`/task ID whose text was not included, and then extract just that section (for
+   example `sed -n '/^### R-042/,/^### /p' plan.md`), not the whole file. Read project instructions
+   and relevant guides as usual.
 2. Verify every intended file is allowed, then follow the task order and project test rules.
 3. Run focused verification and review the diff for scope, secrets, generated files, and unrelated
    edits.
