@@ -6,9 +6,8 @@ a modular Kotlin/JVM server, and shared wire contracts.
 Shared Gradle policy is implemented by the included `convention-plugins` build.
 Individual modules declare only their role-specific plugins and dependencies.
 
-Only the authentication slice is scaffolded. The repository currently contains
-build configuration and module boundaries, but no authentication behavior or
-application source code.
+Only the authentication slice is scaffolded. Core infrastructure has initial source
+code, but feature modules do not contain authentication behavior yet.
 
 ## Modules
 
@@ -38,6 +37,12 @@ services/server/
 Feature modules do not depend on other feature implementations. Entry-point
 modules compose features, and both client and server may depend on the shared
 auth contract.
+
+## Documentation
+
+Start with [`docs/README.md`](docs/README.md), then read only the guides relevant
+to the area being changed. Spec Kit configuration and templates live in `.specify`;
+feature artifacts live in `specs`.
 
 ## Build
 

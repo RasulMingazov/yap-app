@@ -14,7 +14,7 @@ fun `GIVEN remote user WHEN refreshing THEN returns user`() = runTest {
     val user = StubUser.stubUser()
     val env = Environment(remoteUser = user)
 
-    val result = env.repository.get(
+    val result = env.repository.getById(
         id = UserId(StubUser.ID),
         forceUpdate = true,
     )

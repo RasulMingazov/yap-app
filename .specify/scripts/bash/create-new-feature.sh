@@ -96,6 +96,7 @@ fi
 
 MAX_FEATURE_NUMBER=9223372036854775807
 MAX_BRANCH_LENGTH=244
+FEATURE_BRANCH_PREFIX="feature/"
 
 is_feature_number_in_range() {
     local value="$1"
@@ -150,21 +151,23 @@ clean_branch_name() {
     echo "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//'
 }
 
-# Fit a feature prefix and suffix within GitHub's branch-name limit.
-fit_branch_name() {
+# Fit a spec directory name within GitHub's branch-name limit, reserving room
+# for the repository's required `feature/` branch prefix.
+fit_feature_name() {
     local feature_num="$1"
     local branch_suffix="$2"
-    local branch_name="${feature_num}-${branch_suffix}"
+    local feature_name="${feature_num}-${branch_suffix}"
+    local max_feature_name_length=$((MAX_BRANCH_LENGTH - ${#FEATURE_BRANCH_PREFIX}))
 
-    if [ ${#branch_name} -gt $MAX_BRANCH_LENGTH ]; then
+    if [ ${#feature_name} -gt $max_feature_name_length ]; then
         local prefix_length=$(( ${#feature_num} + 1 ))
-        local max_suffix_length=$((MAX_BRANCH_LENGTH - prefix_length))
+        local max_suffix_length=$((max_feature_name_length - prefix_length))
         local truncated_suffix
         truncated_suffix=$(printf '%s' "$branch_suffix" | cut -c "1-$max_suffix_length" | sed 's/-$//')
-        branch_name="${feature_num}-${truncated_suffix}"
+        feature_name="${feature_num}-${truncated_suffix}"
     fi
 
-    printf '%s' "$branch_name"
+    printf '%s' "$feature_name"
 }
 
 # Quote a value for POSIX shell reuse, byte-identical to Python's shlex.quote
@@ -261,7 +264,6 @@ fi
 # Determine branch prefix
 if [ "$USE_TIMESTAMP" = true ]; then
     FEATURE_NUM=$(date +%Y%m%d-%H%M%S)
-    BRANCH_NAME="${FEATURE_NUM}-${BRANCH_SUFFIX}"
 else
     if [ -n "$BRANCH_NUMBER" ] && [[ ! "$BRANCH_NUMBER" =~ ^[0-9]+$ ]]; then
         echo "Error: --number must be an unsigned integer, got '$BRANCH_NUMBER'" >&2
@@ -291,8 +293,8 @@ else
     # by a feature directory. Auto-detected numbers are already conflict-free.
     if [ "$NUMBER_EXPLICIT" = true ]; then
         SPEC_CONFLICT=false
-        REQUESTED_BRANCH_NAME=$(fit_branch_name "$FEATURE_NUM" "$BRANCH_SUFFIX")
-        REQUESTED_DIR="$SPECS_DIR/$REQUESTED_BRANCH_NAME"
+        REQUESTED_FEATURE_NAME=$(fit_feature_name "$FEATURE_NUM" "$BRANCH_SUFFIX")
+        REQUESTED_DIR="$SPECS_DIR/$REQUESTED_FEATURE_NAME"
         if [ "$ALLOW_EXISTING" != true ] || [ ! -d "$REQUESTED_DIR" ]; then
             spec_prefix_exists "$SPECS_DIR" "$FEATURE_NUM" && SPEC_CONFLICT=true
         fi
@@ -316,17 +318,19 @@ else
 
 fi
 
-# GitHub enforces a 244-byte limit on branch names
-# Validate and truncate if necessary
-ORIGINAL_BRANCH_NAME="${FEATURE_NUM}-${BRANCH_SUFFIX}"
-BRANCH_NAME=$(fit_branch_name "$FEATURE_NUM" "$BRANCH_SUFFIX")
-if [ "$BRANCH_NAME" != "$ORIGINAL_BRANCH_NAME" ]; then
+# Keep the spec directory independent from the Git branch. GitHub enforces a
+# 244-byte branch-name limit, including the required `feature/` prefix.
+ORIGINAL_FEATURE_NAME="${FEATURE_NUM}-${BRANCH_SUFFIX}"
+FEATURE_NAME=$(fit_feature_name "$FEATURE_NUM" "$BRANCH_SUFFIX")
+BRANCH_NAME="${FEATURE_BRANCH_PREFIX}${FEATURE_NAME}"
+if [ "$FEATURE_NAME" != "$ORIGINAL_FEATURE_NAME" ]; then
     >&2 echo "[specify] Warning: Branch name exceeded GitHub's 244-byte limit"
+    ORIGINAL_BRANCH_NAME="${FEATURE_BRANCH_PREFIX}${ORIGINAL_FEATURE_NAME}"
     >&2 echo "[specify] Original: $ORIGINAL_BRANCH_NAME (${#ORIGINAL_BRANCH_NAME} bytes)"
     >&2 echo "[specify] Truncated to: $BRANCH_NAME (${#BRANCH_NAME} bytes)"
 fi
 
-FEATURE_DIR="$SPECS_DIR/$BRANCH_NAME"
+FEATURE_DIR="$SPECS_DIR/$FEATURE_NAME"
 SPEC_FILE="$FEATURE_DIR/spec.md"
 
 if [ "$DRY_RUN" != true ]; then

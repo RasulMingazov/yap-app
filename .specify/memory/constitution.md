@@ -1,23 +1,17 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 2.0.0 → 2.1.0 (MINOR — workflow guidance expanded)
-Modified principles: none this amendment
-Added sections:
-  - Development Workflow & Quality Gates: branch naming convention
-    (`feature/...`, `tech/...`, `test/...`)
-Removed sections: none this amendment
+Version change: 2.1.0 → 2.2.0 (MINOR — Test-First restored)
+Added principles:
+  - III. Test-First Development
+Renumbered principles:
+  - Static Analysis Gate: III → IV
+  - Simplicity & YAGNI: IV → V
+Updated project guidance:
+  - Spec Kit scripts and templates now use `feature/...` Git branches while
+    keeping feature artifacts under `specs/<feature-id>/`.
+  - Plan and task templates now use the repository's real structure and guides.
 Deferred/TODO placeholders: none
-Templates requiring follow-up: none checked in this run — plan/spec/tasks templates
-  read this constitution at runtime and were not modified here (see Scope Guard).
-
-Previous entry (2.0.0):
-Version change: 1.0.0 → 2.0.0 (MAJOR — principle removed)
-Modified principles:
-  - III. Static Analysis Gate (was IV) — renumbered, wording unchanged
-  - IV. Simplicity & YAGNI (was V) — renumbered, wording unchanged
-Removed sections:
-  - Core Principles: III. Test-First Development — removed at user request
 -->
 
 # Yap App Constitution
@@ -47,7 +41,22 @@ tool configuration that a convention plugin already owns.
 between the many KMP/JVM modules in this monorepo and keeps onboarding a new
 module a matter of picking the right plugin, not copying build scripts.
 
-### III. Static Analysis Gate (NON-NEGOTIABLE)
+### III. Test-First Development (NON-NEGOTIABLE)
+Every behavior change MUST start with a focused test that fails for the expected
+reason. A bug fix starts with a regression test. After observing the failure,
+write the smallest implementation that makes the test pass, then refactor while
+keeping the suite green.
+
+Tests MUST verify project-owned observable behavior at the boundary that owns it.
+Do not add tests for pass-through use cases, constructors, generated code, or
+framework behavior merely to satisfy this principle. Documentation, build-only,
+and empty-scaffold changes require verification but no artificial test. If a
+behavior change cannot be tested first, record the concrete reason in its plan or
+PR before implementation.
+**Rationale**: A failing test proves that the test can detect the missing or broken
+behavior and gives later refactoring a reliable safety boundary.
+
+### IV. Static Analysis Gate (NON-NEGOTIABLE)
 Every module that applies a JVM/KMP convention plugin MUST run Detekt against
 the shared ruleset in `config/detekt/detekt.yml` with
 `buildUponDefaultConfig` enabled. Code MUST NOT be merged with unresolved
@@ -58,7 +67,7 @@ deliberately and reviewed as a config change.
 plugins and applied uniformly. Treating it as advisory rather than a gate
 would let inconsistent code quality creep in across modules silently.
 
-### IV. Simplicity & YAGNI
+### V. Simplicity & YAGNI
 Implementation MUST match the current spec — no speculative abstractions,
 unused configuration flags, or infrastructure for features not yet
 specified. When a module currently has no application behavior (as noted for
@@ -118,4 +127,4 @@ Principles above. Any deviation MUST be justified in the PR description and,
 if it reveals a recurring need, MUST be proposed back as a constitution
 amendment rather than repeated as an undocumented exception.
 
-**Version**: 2.1.0 | **Ratified**: 2026-08-08 | **Last Amended**: 2026-08-08
+**Version**: 2.2.0 | **Ratified**: 2026-08-08 | **Last Amended**: 2026-08-09

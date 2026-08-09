@@ -78,7 +78,11 @@ get_repo_root() {
 # the git extension) or implicitly via .specify/feature.json.
 get_current_branch() {
     if [[ -n "${SPECIFY_FEATURE:-}" ]]; then
-        echo "$SPECIFY_FEATURE"
+        if [[ "$SPECIFY_FEATURE" =~ ^([0-9]{3,}|[0-9]{8}-[0-9]{6})- ]]; then
+            echo "feature/$SPECIFY_FEATURE"
+        else
+            echo "$SPECIFY_FEATURE"
+        fi
         return
     fi
 
@@ -210,10 +214,11 @@ get_feature_paths() {
     # When no branch context exists (no SPECIFY_FEATURE, feature resolved via
     # SPECIFY_FEATURE_DIRECTORY or feature.json), fall back to the feature
     # directory basename so CURRENT_BRANCH is a usable identifier rather than
-    # an empty, misleading value (issue #3026).
+    # an empty, misleading value (issue #3026). Spec Kit directories omit the
+    # repository's required `feature/` Git branch prefix.
     if [[ -z "$current_branch" ]]; then
         local feature_dir_trimmed="${feature_dir%/}"
-        current_branch="${feature_dir_trimmed##*/}"
+        current_branch="feature/${feature_dir_trimmed##*/}"
     fi
 
     # Use printf '%q' to safely quote values, preventing shell injection

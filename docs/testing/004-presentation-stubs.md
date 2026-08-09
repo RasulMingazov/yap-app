@@ -55,4 +55,4 @@ internal object ProfileStubs {
 - Use base builders with explicit fields when a test must describe the whole mapping input or output.
 - Add named scenario builders with defaults for recurring states, such as `stubContentUiState()`.
 - Keep every parameter named and overridable.
-- Keep call behavior in behavioral stubs from [Test Stubs](003-test-stubs.md), not in this object.
+- Keep call behavior in behavioral stubs from [Test Stubs](003-stubs.md), not in this object.

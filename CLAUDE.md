@@ -12,18 +12,27 @@ Project-wide governance and focused rules apply to this repo. Read only what is
 relevant to the current change.
 
 - **`.specify/memory/constitution.md`** — project-wide governance: module boundary
-  isolation, convention-plugin-governed build, the Detekt gate, Simplicity/YAGNI,
-  branch naming. Applies to every change.
-- **[`docs/adr/README.md`](docs/adr/README.md)** — routing index for small, focused
-  architecture decisions. Use its "Read when changing" column to select only the
-  ADRs relevant to the current boundary, then read each selected ADR in full.
-- **[`docs/testing/README.md`](docs/testing/README.md)** — routing index for unit-test
-  structure, environments, and stubs. Read the relevant document before changing
-  unit tests or shared test support.
+  isolation, Test-First, convention-plugin-governed build, the Detekt gate,
+  Simplicity/YAGNI, and branch naming. Applies to every change.
+- **[`docs/README.md`](docs/README.md)** — top-level documentation routing by area.
+- **[`docs/mobile/README.md`](docs/mobile/README.md)** — routing index for mobile
+  domain, data, repositories, and presentation rules.
+- **[`docs/server/README.md`](docs/server/README.md)** — routing index for server
+  module, service, adapter, and persistence rules.
+- **[`docs/shared/README.md`](docs/shared/README.md)** — DTO naming and wire-boundary
+  rules for `shared/contract/*` and its mobile/server consumers.
+- **[`docs/testing/README.md`](docs/testing/README.md)** — routing index for test
+  structure, unit-test support, and backend integration verification. Read each
+  relevant document before changing tests or shared test support.
 
-An intentional exception to an ADR must be justified in the PR description (per the
-constitution's Governance section) or superseded by a later ADR — not silently
-worked around.
+An intentional exception to a documented architecture rule must be justified in the
+PR description or reflected by updating the owning guide. Do not silently work
+around the rule.
+
+When using Spec Kit, read the constitution and relevant `docs/*` guides before
+finalizing `plan.md` or `tasks.md`. Generated feature artifacts refine behavior;
+they do not override project rules. Work in this order:
+`constitution → relevant docs → spec/plan/tasks → implementation → verification`.
 
 ## Verification
 
@@ -44,7 +53,7 @@ change, and `test/...` for test-only changes.
 Run `git config core.hooksPath .githooks` once per clone — enables the `pre-push`
 hook that blocks pushing Detekt violations.
 
-`stubcall` (test stubs, see [`docs/testing/003-test-stubs.md`](docs/testing/003-test-stubs.md))
+`stubcall` (test stubs, see [`docs/testing/003-stubs.md`](docs/testing/003-stubs.md))
 is resolved from the file-based Maven repository committed in `libs/`. Do not
 `includeBuild` a sibling `stub-call` checkout: the committed repository keeps builds
 independent from files outside this project.

@@ -46,7 +46,7 @@ internal object StubUser {
 
 ### Behavioral stubs
 
-Use `stubcall` for collaborators such as use cases, repositories, and data sources:
+Use `stubcall` for behavioral collaborators. Reusable presentation stubs implement use-case contracts:
 
 ```kotlin
 internal class StubGetUserUseCase(
@@ -65,4 +65,6 @@ internal class StubGetUserUseCase(
 - Match `N` to the method arity; use `unit()` for `Unit` methods and `returns(...)` for a default result.
 - Delegate the method directly to `StubCallN`; do not duplicate return values, errors, counters, or captured arguments.
 - Configure results and failures and verify calls through that property in tests.
-- Use a focused state stub when the contract exposes mutable state, such as `StateFlow`.
+- Presentation tests stub use cases, never repositories.
+- Keep repository and data-source test doubles local to tests of the layer that owns those contracts; do not export them as presentation fixtures.
+- Use `MutableValue` exposed as read-only `Value` for presentation component state. Use a focused `StateFlow` stub only when the owning domain or data contract is flow-based.
