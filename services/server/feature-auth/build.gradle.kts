@@ -1,5 +1,6 @@
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.testing.Test
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
 plugins {
     alias(libs.plugins.yap.ktor.server)
@@ -18,6 +19,14 @@ configurations[integrationTest.implementationConfigurationName]
 configurations[integrationTest.runtimeOnlyConfigurationName]
     .extendsFrom(configurations.testRuntimeOnly.get())
 
+// The suite verifies the feature's own adapters, which are internal to the module.
+extensions.configure<KotlinJvmProjectExtension> {
+    val compilations = target.compilations
+    compilations.named(integrationTest.name) {
+        associateWith(compilations.getByName(SourceSet.MAIN_SOURCE_SET_NAME))
+    }
+}
+
 dependencies {
     implementation(project(":services:server:core-database"))
     implementation(project(":services:server:core-security"))
@@ -31,8 +40,11 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.stubcall)
 
+    "integrationTestImplementation"(libs.flyway.core)
+    "integrationTestImplementation"(libs.flyway.database.postgresql)
     "integrationTestImplementation"(libs.postgresql)
     "integrationTestImplementation"(libs.testcontainers.postgresql)
 }
