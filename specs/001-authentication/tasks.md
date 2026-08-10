@@ -79,25 +79,25 @@ no SDK, writes no exchange code, and claims no T-ID verification. Its deferred q
 
 ## Phase 4 — Server exposure and verification checkpoint
 
-- [ ] **T017** Add failing route tests in `services/server/feature-auth/src/test/.../api/` covering
+- [x] **T017** Add failing route tests in `services/server/feature-auth/src/test/.../api/` covering
   the full DTO combination matrix from `plan.md`: every valid per-provider combination accepted, and
   every rejected combination mapped to `invalid_request`, `challenge_invalid`, or
   `provider_unavailable` as documented, with no credential in any error body
-- [ ] **T018** Add a failing route test asserting that only `POST /auth/challenge`,
+- [x] **T018** Add a failing route test asserting that only `POST /auth/challenge`,
   `POST /auth/login`, and `POST /auth/refresh` exist, so no logout route is introduced
-- [ ] **T019** Implement `api/AuthRoutes.kt` translating HTTP only, with shared failure mapping and
+- [x] **T019** Implement `api/AuthRoutes.kt` translating HTTP only, with shared failure mapping and
   redirect-URI validation against the registered per-provider value
-- [ ] **T020** Create `services/server/app/src/main/kotlin/app/yap/server/Main.kt` with Ktor
+- [x] **T020** Create `services/server/app/src/main/kotlin/app/yap/server/Main.kt` with Ktor
   `ContentNegotiation`, `StatusPages`, `/health`, manual graph construction, auth route
   registration, and the scheduled challenge cleanup
-- [ ] **T021** Add the PostgreSQL integration suite in
+- [x] **T021** Add the PostgreSQL integration suite in
   `services/server/feature-auth/src/integrationTest/`: clean bootstrap of all migrations, challenge
   lock/consume with two concurrent attempts yielding one session, concurrent first login yielding
   one account, unique provider+subject, rollback leaving no partial account, refresh rotation,
   replay revocation, expired-challenge cleanup, and stable-account-ID continuity for same-provider
   re-login versus unlinked providers (R-083, R-085, AC-031…AC-035, AC-054). Coordinate concurrency
   with a latch
-- [ ] **T022** **Server checkpoint** — run `./gradlew :services:server:feature-auth:test`,
+- [x] **T022** **Server checkpoint** — run `./gradlew :services:server:feature-auth:test`,
   `./gradlew :services:server:app:test`, and
   `./gradlew :services:server:feature-auth:integrationTest`. If no container runtime is available,
   report "integration suite not executed"; never report it as passing database verification
@@ -130,43 +130,43 @@ no SDK, writes no exchange code, and claims no T-ID verification. Its deferred q
 
 ## Phase 6 — Auth orchestration and screen state
 
-- [ ] **T031** Add failing `SelectProviderUiStateMapperTest` cases asserting the complete `UiState`
+- [x] **T031** Add failing `SelectProviderUiStateMapperTest` cases asserting the complete `UiState`
   for both platform defaults: order preserved, stable keys, display names, icon tokens, visibility,
   enabled state, and the `Нет доступных способов входа` empty state (R-011…R-017, AC-005, AC-006,
   AC-016, AC-040, AC-041)
-- [ ] **T032** Add `LoginProvider`, `LoginProviderId`, and the injected `LoginProviderConfig`, with
+- [x] **T032** Add `LoginProvider`, `LoginProviderId`, and the injected `LoginProviderConfig`, with
   Android and iOS defaults in `di` platform source sets (Google enabled; Apple and T-ID disabled;
   Apple hidden on Android)
-- [ ] **T033** Add the Russian string resources for both screens to `feature-auth` Compose resources
+- [x] **T033** Add the Russian string resources for both screens to `feature-auth` Compose resources
   verbatim from the frozen baseline and the specification (R-067, R-068, AC-039)
-- [ ] **T034** Implement `SelectProviderComponent` with `Output.Dismissed` and
+- [x] **T034** Implement `SelectProviderComponent` with `Output.Dismissed` and
   `Output.ProviderSelected`, its default component, model, and mapper. It must contain no reference
   to `LoginComponent` (R-088, R-091)
-- [ ] **T035** Add failing `LoginUiStateMapperTest` cases for marquee, hero, topics, body, button
+- [x] **T035** Add failing `LoginUiStateMapperTest` cases for marquee, hero, topics, body, button
   label, caption, and the loading state that replaces the label (R-003, AC-044)
-- [ ] **T036** Implement `LoginComponent` with `Output.OpenProviderSelection`, its default
+- [x] **T036** Implement `LoginComponent` with `Output.OpenProviderSelection`, its default
   component, `LoginModel`, mapper, and the public `dispatch(Event)` API with `LoginClicked` and
   `ProviderSelected(providerId)`. It must declare no slot navigation and no reference to
   `SelectProviderComponent` (R-088, R-089, R-093)
-- [ ] **T037** Add failing `AuthComponentTest` orchestration cases: a `Login`
+- [x] **T037** Add failing `AuthComponentTest` orchestration cases: a `Login`
   `OpenProviderSelection` output presents `SelectProvider` through `AuthComponent`; `Dismissed`
   returns to the same unchanged `Login` child without recreating it; `ProviderSelected` is delivered
   to `AuthComponent`; the slot is cleared before Auth calls
   `login.dispatch(LoginComponent.Event.ProviderSelected(providerId))` exactly once; duplicate
   actions are blocked across the transition; and `Login` state is preserved while `SelectProvider`
   is presented (R-087…R-095, AC-055…AC-059)
-- [ ] **T038** Add failing structural tests asserting `LoginComponent` sources reference neither
+- [x] **T038** Add failing structural tests asserting `LoginComponent` sources reference neither
   `SelectProviderComponent` nor any slot navigation, `SelectProviderComponent` references no
   `LoginComponent`, and `app-root` references neither screen (AC-060, AC-061)
-- [ ] **T039** Add failing `LoginModelTest` cases for `dispatch(ProviderSelected(...))`: disabled-provider
+- [x] **T039** Add failing `LoginModelTest` cases for `dispatch(ProviderSelected(...))`: disabled-provider
   news exactly once, configuration-failure news, enabled dispatch, cancellation emitting no news,
   retry after failure, loading always ending, and duplicate provider events starting at most one
   attempt (R-027…R-031, R-090, AC-023…AC-029, AC-042)
-- [ ] **T040** Implement `AuthComponent`, `DefaultAuthComponent`, and `AuthModel`: the permanent
+- [x] **T040** Implement `AuthComponent`, `DefaultAuthComponent`, and `AuthModel`: the permanent
   `Login` child, the `ChildSlot` holding `SelectProvider`, output handling, and the cross-screen
   duplicate-action guard; then implement the tested `LoginModel` provider-event behavior and
   `AuthStubs`, `LoginStubs`, and `SelectProviderStubs`
-- [ ] **T041** **Mobile logic checkpoint** — run `./gradlew :apps:mobile:feature-auth:allTests`
+- [x] **T041** **Mobile logic checkpoint** — run `./gradlew :apps:mobile:feature-auth:allTests`
 
 ## Phase 7 — Compose rendering of the frozen baseline
 

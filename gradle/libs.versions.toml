@@ -24,7 +24,7 @@ postgresqlImage = "postgres:17"
 slf4j = "2.0.16"
 stubcall = "0.1.0"
 targetSdk = "36"
-testcontainers = "1.21.3"
+testcontainers = "1.21.4"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version = "1.13.0" }
