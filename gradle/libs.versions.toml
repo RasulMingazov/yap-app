@@ -64,6 +64,8 @@ ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlin
 ktor-server-content-negotiation = { group = "io.ktor", name = "ktor-server-content-negotiation", version.ref = "ktor" }
 ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
 ktor-server-netty = { group = "io.ktor", name = "ktor-server-netty", version.ref = "ktor" }
+ktor-server-status-pages = { group = "io.ktor", name = "ktor-server-status-pages", version.ref = "ktor" }
+ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
 gradle-plugin-android-tools = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 gradle-plugin-compose = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "composeMultiplatform" }
 gradle-plugin-detekt = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
