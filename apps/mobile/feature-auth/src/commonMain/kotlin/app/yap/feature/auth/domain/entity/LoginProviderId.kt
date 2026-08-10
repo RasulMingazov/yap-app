@@ -6,8 +6,10 @@ package app.yap.feature.auth.domain.entity
  *
  * [id] is the stable lowercase identifier of the provider, used verbatim wherever a provider has to
  * be named outside Kotlin code.
+ *
+ * It is public because the feature's component contracts carry it across the module boundary.
  */
-internal enum class LoginProviderId(val id: String) {
+enum class LoginProviderId(val id: String) {
     Apple("apple"),
     Google("google"),
     Tid("tid"),

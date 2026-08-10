@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="login_body">Короткие диалоги с ИИ-наставником. Заходишь, говоришь минуту, закрываешь.</string>
+    <string name="login_button">ВОЙТИ</string>
+    <string name="login_caption">Аккаунт нужен для стрика и истории занятий.</string>
+    <string name="login_error_connectivity">Нет соединения с интернетом. Проверьте сеть и попробуйте ещё раз.</string>
+    <string name="login_error_provider">Не удалось войти через %1$s. Попробуйте ещё раз.</string>
+    <string name="login_hero">БОЛТАЙ БЕЗ СТРАХА</string>
+    <string name="login_marquee">ВХОД ЗА 1 ТАП ✦ БЕЗ ПАРОЛЕЙ</string>
+    <string name="login_provider_coming_soon">Вход через %1$s скоро появится</string>
+    <string name="login_provider_unavailable">Вход через %1$s временно недоступен. Обновите приложение или попробуйте позже.</string>
+    <string name="login_topic_dating">ЗНАКОМСТВА</string>
+    <string name="login_topic_rejections">ОТКАЗЫ</string>
+    <string name="login_topic_small_talk">SMALL TALK</string>
+    <string name="select_provider_empty">Нет доступных способов входа</string>
+    <string name="select_provider_title">СПОСОБЫ ВХОДА</string>
+</resources>
