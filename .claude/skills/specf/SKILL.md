@@ -80,5 +80,7 @@ NEXT
 
 Replace placeholders with the actual feature and phase. Recommend only a step whose prerequisites
 are satisfied; otherwise use `BLOCKED: <short reason>`.
-For `batch`, interactive confirmation replaces `NEXT` before approval; emit `NEXT` (or the
-equivalent interactive choice) only after an approved batch runs.
+For `batch`, this applies only to a `READY` batch: interactive confirmation (`Run`/`Change`/`Cancel`)
+replaces `NEXT` before approval, and `NEXT` (or the equivalent interactive choice) is emitted only
+after an approved batch runs. A `NOT READY` report has no batch to approve, so it ends with `NEXT`
+immediately, pointing at the concrete action that unblocks progress.

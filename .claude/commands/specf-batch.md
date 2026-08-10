@@ -29,7 +29,10 @@ Use `$ARGUMENTS` to resolve the feature and optional `--active-phase N` and `--m
    - every worker path is assigned explicitly and shared paths are coordinator-owned;
    - `specf-worker` is available with worktree isolation;
    - no uncommitted prerequisite or shared change is missing from the worker baseline.
-6. Select the smallest executable batch. If parallel work is unsafe, recommend one sequential packet.
+6. Select the smallest executable batch. If parallel work is unsafe, do not name a fallback packet
+   that is itself blocked by uncommitted or incomplete prerequisite work — identify the concrete
+   action that unblocks progress instead (usually finishing and committing the phase whose
+   incomplete work is the blocker) and recommend that.
 
 ## Report
 
@@ -73,20 +76,17 @@ For `NOT READY`, report:
 ```text
 Not ready for parallel
 
-Fallback:
-1. <role-name>
-   - Phase <N> (<task IDs>)
-   - <module/**>
-
 Why:
 <one complete sentence, at most 20 words>
 
-Blocked:
-- <phase/task IDs -> prerequisite phase/task IDs>
+NEXT
+<copy-ready /specf-* command for the concrete unblocking action>
 ```
 
-Omit `Fallback` when there is no executable fallback. Omit `Blocked` when the sentence in `Why` fully
-explains why parallelism is unavailable. Never list blocked future phases when a ready batch exists.
+`NEXT` names the action that actually unblocks progress right now — never a phase that `Why` itself
+describes as blocked. Add a `Blocked:` line (`<phase/task IDs -> prerequisite phase/task IDs>`) only
+when `Why` plus `NEXT` do not already make the dependency obvious; prefer omitting it. Never list
+blocked future phases when a ready batch exists.
 
 Before showing the report, verify that every line is complete, correctly spaced, and matches one of
 these templates. Each agent block must contain only role name, phase, task IDs, and compact module
@@ -94,11 +94,13 @@ scope. Number agents from 1 without gaps.
 
 ## Confirm
 
-After the report, use the interactive question tool when available. Do not duplicate its choices in
-the report or surrounding text. Offer only actions that are currently executable: `Run`, `Change`,
-and `Cancel` for a ready batch; omit `Run` when no batch is ready. If the tool is unavailable, ask one
-plain-text question instead. Recheck a changed batch and report it again. Only explicit approval
-authorizes changes.
+For a `READY` batch, use the interactive question tool when available and offer `Run`, `Change`, and
+`Cancel`. Do not duplicate its choices in the report or surrounding text. If the tool is unavailable,
+ask one plain-text question instead. Recheck a changed batch and report it again. Only explicit
+approval authorizes changes.
+
+For `NOT READY`, there is no batch to confirm — end with `NEXT` as described above (interactive
+`Apply`/`Change`/`Skip` when available, per `SKILL.md`) instead of asking a confirmation question.
 
 ## Coordinate after approval
 
