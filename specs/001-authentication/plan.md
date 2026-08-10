@@ -170,8 +170,10 @@ Event flow:
    `ShowSnackbar` news; an enabled provider starts the attempt and owns loading, cancellation,
    failure, success, and duplicate-attempt protection (R-090, R-095).
 
-`AuthComponent.UiState` carries only what the overlay composition needs (whether the sheet is
-presented); `LoginComponent.UiState` and `SelectProviderComponent.UiState` carry their own screen
+`AuthComponent` exposes no `UiState`: it owns no screen content, and the only thing the overlay
+composition needs — whether the sheet is presented — is already `selectProviderSlot.child`, which
+also carries the child the sheet renders. Its retained duplicate-action guard stays internal to
+`AuthModel`. `LoginComponent.UiState` and `SelectProviderComponent.UiState` carry their own screen
 content. `AuthContent` composes `LoginContent` and, when the slot is active, presents
 `SelectProviderContent` as the modal bottom sheet with the baseline scrim (R-093).
 

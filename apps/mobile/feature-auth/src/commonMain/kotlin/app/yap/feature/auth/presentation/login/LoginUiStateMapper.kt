@@ -14,19 +14,27 @@ import app.yap.feature.auth.generated.resources.login_topic_small_talk
  * Selects every repeatable value the screen renders, including the loading state that replaces the
  * button label (R-003, R-069, AC-044).
  */
-internal fun LoginModel.DataState.toUiState(): LoginComponent.UiState = LoginComponent.UiState(
-    body = Res.string.login_body,
-    button = if (isLoading) {
-        LoginComponent.UiState.Button.Loading
-    } else {
-        LoginComponent.UiState.Button.Label(text = Res.string.login_button)
-    },
-    caption = Res.string.login_caption,
-    hero = Res.string.login_hero,
-    marquee = Res.string.login_marquee,
-    topics = listOf(
-        Res.string.login_topic_small_talk,
-        Res.string.login_topic_rejections,
-        Res.string.login_topic_dating,
-    ),
-)
+internal interface LoginUiStateMapper {
+
+    operator fun invoke(dataState: LoginModel.DataState): LoginComponent.UiState
+}
+
+internal class DefaultLoginUiStateMapper : LoginUiStateMapper {
+
+    override fun invoke(dataState: LoginModel.DataState): LoginComponent.UiState = LoginComponent.UiState(
+        body = Res.string.login_body,
+        button = if (dataState.isLoading) {
+            LoginComponent.UiState.Button.Loading
+        } else {
+            LoginComponent.UiState.Button.Label(text = Res.string.login_button)
+        },
+        caption = Res.string.login_caption,
+        hero = Res.string.login_hero,
+        marquee = Res.string.login_marquee,
+        topics = listOf(
+            Res.string.login_topic_small_talk,
+            Res.string.login_topic_rejections,
+            Res.string.login_topic_dating,
+        ),
+    )
+}

@@ -12,7 +12,6 @@ import com.arkivanov.decompose.router.slot.childSlot
 import com.arkivanov.decompose.router.slot.dismiss
 import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
-import com.arkivanov.decompose.value.operator.map
 import com.arkivanov.decompose.value.update
 import com.arkivanov.essenty.instancekeeper.InstanceKeeper
 import com.arkivanov.essenty.instancekeeper.getOrCreate
@@ -50,8 +49,6 @@ internal class DefaultAuthComponent(
             output = ::onSelectProviderOutput,
         )
     }
-
-    override val uiState: Value<AuthComponent.UiState> = model.dataState.map(AuthModel.DataState::toUiState)
 
     private fun onLoginOutput(output: LoginComponent.Output) {
         when (output) {
@@ -110,8 +107,6 @@ internal class AuthModel : InstanceKeeper.Instance {
 
     private val mutableDataState = MutableValue(DataState(isProviderSelectionPresented = false))
 
-    val dataState: Value<DataState> = mutableDataState
-
     fun startProviderSelection(): Boolean {
         if (mutableDataState.value.isProviderSelectionPresented) return false
 
@@ -135,8 +130,5 @@ internal class AuthModel : InstanceKeeper.Instance {
         fun create(): AuthModel = AuthModel()
     }
 }
-
-private fun AuthModel.DataState.toUiState(): AuthComponent.UiState =
-    AuthComponent.UiState(isProviderSelectionPresented = isProviderSelectionPresented)
 
 private data object SelectProviderConfig

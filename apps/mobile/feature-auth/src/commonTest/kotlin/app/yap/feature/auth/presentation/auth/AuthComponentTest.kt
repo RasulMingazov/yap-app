@@ -25,10 +25,6 @@ internal class AuthComponentTest {
 
         env.login.output(LoginComponent.Output.OpenProviderSelection)
 
-        assertEquals(
-            expected = AuthStubs.stubUiState(isProviderSelectionPresented = true),
-            actual = env.auth.uiState.value,
-        )
         assertNotNull(env.presentedSelectProvider)
     }
 

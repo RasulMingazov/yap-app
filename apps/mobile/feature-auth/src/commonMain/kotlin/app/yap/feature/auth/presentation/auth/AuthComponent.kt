@@ -15,11 +15,6 @@ interface AuthComponent {
 
     val login: LoginComponent
     val selectProviderSlot: Value<ChildSlot<*, SelectProviderComponent>>
-    val uiState: Value<UiState>
-
-    data class UiState(
-        val isProviderSelectionPresented: Boolean,
-    )
 
     interface Factory {
 
