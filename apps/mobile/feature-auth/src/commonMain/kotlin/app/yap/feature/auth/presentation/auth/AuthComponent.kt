@@ -8,16 +8,16 @@ import com.arkivanov.decompose.value.Value
 
 /**
  * Root of the authentication feature and the single owner of the relationship between its two
- * screens: [login] is a permanent child and [selectProviderSlot] is the navigation primitive that
+ * screens: [login] is a permanent child and [selectProvider] is the navigation primitive that
  * holds the modal provider sheet (R-087, R-090, R-092, R-093).
  */
 interface AuthComponent {
 
     val login: LoginComponent
-    val selectProviderSlot: Value<ChildSlot<*, SelectProviderComponent>>
+    val selectProvider: Value<ChildSlot<*, SelectProviderComponent>>
 
     interface Factory {
 
-        fun create(componentContext: ComponentContext): AuthComponent
+        operator fun invoke(componentContext: ComponentContext): AuthComponent
     }
 }

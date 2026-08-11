@@ -15,3 +15,7 @@ style:
     ignoreAnnotated: ['Composable']
   MaxLineLength:
     active: false
+  ReturnCount:
+    # Guard clauses are mandated by docs/code-conventions.md, so they must not count against the
+    # limit. The rule still catches returns scattered through the body of a function.
+    excludeGuardClauses: true

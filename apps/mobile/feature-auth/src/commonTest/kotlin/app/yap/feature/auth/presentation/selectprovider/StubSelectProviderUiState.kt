@@ -1,6 +1,5 @@
 package app.yap.feature.auth.presentation.selectprovider
 
-import app.yap.feature.auth.domain.entity.LoginProvider
 import app.yap.feature.auth.domain.entity.LoginProviderId
 import app.yap.feature.auth.domain.entity.StubLoginProvider
 import app.yap.feature.auth.generated.resources.Res
@@ -8,28 +7,28 @@ import app.yap.feature.auth.generated.resources.select_provider_empty
 import app.yap.feature.auth.generated.resources.select_provider_title
 import org.jetbrains.compose.resources.StringResource
 
-internal object SelectProviderStubs {
+internal object StubSelectProviderUiState {
 
-    fun stubDataState(
-        providers: List<LoginProvider> = StubLoginProvider.stubIosProviders(),
-    ) = SelectProviderModel.DataState(providers = providers)
-
-    fun stubUiState(
-        emptyMessage: StringResource?,
-        providers: List<SelectProviderComponent.UiState.Provider>,
+    fun stubSelectProviderUiState(
+        emptyMessage: StringResource? = null,
+        isLoading: Boolean = false,
+        providers: List<SelectProviderUiState.Provider> = emptyList(),
         title: StringResource = Res.string.select_provider_title,
-    ) = SelectProviderComponent.UiState(
+    ) = SelectProviderUiState(
         emptyMessage = emptyMessage,
+        isLoading = isLoading,
         providers = providers,
         title = title,
     )
 
     fun stubEmptyUiState(
         emptyMessage: StringResource = Res.string.select_provider_empty,
-    ) = stubUiState(
+    ) = stubSelectProviderUiState(
         emptyMessage = emptyMessage,
         providers = emptyList(),
     )
+
+    fun stubLoadingUiState() = stubSelectProviderUiState(isLoading = true)
 
     fun stubProviderRow(
         displayName: String,
@@ -37,7 +36,7 @@ internal object SelectProviderStubs {
         id: LoginProviderId,
         isEnabled: Boolean,
         key: String,
-    ) = SelectProviderComponent.UiState.Provider(
+    ) = SelectProviderUiState.Provider(
         displayName = displayName,
         iconToken = iconToken,
         id = id,

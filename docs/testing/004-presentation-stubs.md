@@ -2,68 +2,43 @@
 
 ## Context
 
-Presentation tests repeatedly construct `Model.DataState`, `Component.UiState`,
-`Component.News`, nested presentation values, and resource selections. Keeping them together
-makes mapper and model expectations easier to read.
+Presentation tests repeatedly construct `DataState`, `UiState`, `News`, nested presentation values,
+and resource selections. Naming them like domain stubs keeps one rule for the whole project.
 
 ## Decision
 
-Create one `internal object SliceStubs` beside the presentation tests:
+Presentation values follow the value-stub rule from [Test Stubs](003-stubs.md): one
+`internal object StubX` per type, in its own file `StubX.kt`, with base builder `stubX`.
 
 ```kotlin
-internal object ProfileStubs {
+internal object StubProfileUiState {
 
-    fun stubDataState(
-        hasError: Boolean,
-        isLoading: Boolean,
-        user: User?,
-    ) = ProfileModel.DataState(
-        hasError = hasError,
-        isLoading = isLoading,
-        user = user,
-    )
-
-    fun stubUiState(
-        email: String,
-        error: ProfileComponent.UiState.Error?,
-        isLoading: Boolean,
-        name: String,
-    ) = ProfileComponent.UiState(
-        email = email,
-        error = error,
-        isLoading = isLoading,
-        name = name,
-    )
-
-    fun stubContentUiState(
+    fun stubProfileUiState(
         email: String = StubUser.EMAIL_VALUE,
-        error: ProfileComponent.UiState.Error? = null,
+        error: ProfileUiState.Error? = null,
+        isLoading: Boolean = false,
         name: String = StubUser.NAME,
-    ) = stubUiState(
+    ) = ProfileUiState(
         email = email,
         error = error,
-        isLoading = false,
+        isLoading = isLoading,
         name = name,
     )
 
     fun stubError(
         message: StringResource = Res.string.profile_error,
-    ) = ProfileComponent.UiState.Error(message = message)
-
-    fun stubSnackbarNews(
-        message: StringResource = Res.string.profile_error,
-    ) = ProfileComponent.News.ShowSnackbar(message = message)
+    ) = ProfileUiState.Error(message = message)
 }
 ```
 
-- Name the object after the presentation slice, such as `ProfileStubs` or `LoginStubs`.
-- Keep `Model.DataState`, `Component.UiState`, `Component.News`, nested presentation values, and
-  presentation resources for that slice in the same object.
+- Name the object after the type it builds: `StubProfileUiState`, `StubProfileDataState`,
+  `StubProfileNews`. Do not create one `ProfileStubs` object for the whole slice.
+- Build nested presentation values, such as `ProfileUiState.Error` or a list row, in the object that
+  owns their parent type.
 - Include text resources, icon resources or tokens, ordering, visibility, availability, and
   enabled/loading values in builders when they are part of the mapper's observable output.
-- Add dedicated builders for one-shot `News` payloads, including snackbar messages. Do not add a
-  snackbar trigger to a `UiState` builder.
-- Use base builders with explicit fields when a test must describe the whole mapping input or output.
-- Add named scenario builders with defaults for recurring states, such as `stubContentUiState()`.
-- Keep every parameter named and overridable.
-- Keep call behavior in behavioral stubs from [Test Stubs](003-stubs.md), not in this object.
+- Keep `News` payload builders in `Stub<Slice>News`. Do not add a snackbar trigger to a `UiState`
+  builder.
+- Keep every parameter named and overridable; add named scenario builders with defaults for
+  recurring states, such as `stubEmptyUiState()`.
+- Keep call behavior in behavioral stubs from [Test Stubs](003-stubs.md), not in these objects.

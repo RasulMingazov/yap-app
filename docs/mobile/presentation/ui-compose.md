@@ -3,15 +3,19 @@
 Presentation follows one direction:
 
 ```text
-Domain → Model.DataState → UiStateMapper → Value<Component.UiState> → Compose
-Domain/model outcome → Component.News → Compose one-shot effect
+Domain → <Slice>DataState → toUiState() → Value<<Slice>UiState> → Compose
+Domain outcome → <Slice>News → Compose one-shot effect
 ```
 
 ## UI state
 
 - Keep `UiState` immutable and ready to render.
 - Prefer focused item models with stable keys over broad domain aggregates.
-- Add a mapper whenever the screen owns presentation decisions or needs a useful test seam.
+- Write the mapper as a top-level extension `internal fun <Slice>DataState.toUiState(): <Slice>UiState`
+  in `<Slice>UiStateMapper.kt`, with its private helpers such as `LoginProvider.toRow()` beside it.
+- Use a mapper class only when it needs a constructor dependency, such as injected configuration or
+  a platform capability. Then give it one `fun invoke(dataState:)` and map with
+  `dataState.map(uiStateMapper::invoke)`.
 - Put every repeatable value required to render the screen in `UiState`: text resource
   references, icon resource references or stable icon tokens, item order, visibility,
   enabled/loading state, availability, stable keys, and persistent inline error content.
@@ -19,15 +23,16 @@ Domain/model outcome → Component.News → Compose one-shot effect
   capabilities, and presentation resources.
 - Keep concrete Compose resource types out of domain and model state. Presentation `UiState`
   may contain presentation resource references or stable UI tokens.
-- Nest `UiState` in its owning component contract, for example `ProfileComponent.UiState`.
+- Declare `UiState` as a top-level `ProfileUiState`, not nested in the component. Nest only its own
+  sub-shapes, such as `LoginUiState.Button`.
 - Keep repeatable facts in `UiState`; never add a consumable snackbar, navigation, or dialog flag
   solely to trigger a one-shot effect.
 - Never put theme values, dimensions, focus, scrolling, or animation state in a mapper.
 
 ## News
 
-- Represent one-shot presentation output as the owning component's nested `News`, for example
-  `ProfileComponent.News.ShowSnackbar(message)`.
+- Represent one-shot presentation output as the slice's `News`, for example
+  `ProfileNews.ShowSnackbar(message)`. Use `Output` instead when the parent must act on it.
 - Use `News` for snackbar presentation, navigation commands, and other output that must be handled
   once. A persistent inline error or banner that must survive resubscription remains in `UiState`.
 - Resolve feature copy and resource selection before emitting `News`; a composable must not map a
@@ -73,7 +78,7 @@ Treat mapper tests as the primary verification surface for presentation decision
 
 - Assert the complete observable `UiState` contract: exact text resources, icon mapping, item
   order, visibility, availability, enabled/loading state, and persistent inline-error mapping.
-- Assert one-shot output separately as the exact nested `Component.News` subtype and payload,
+- Assert one-shot output separately as the exact `<Slice>News` subtype and payload,
   including snackbar resource selection and the absence of news on cancellation.
 - Cover every meaningful combination of injected configuration, platform capability, and
   model/domain state.

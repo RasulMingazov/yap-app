@@ -18,10 +18,9 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class LoginModelTest {
+internal class LoginViewModelTest {
 
     @Test
     fun `GIVEN a visible disabled provider WHEN it is selected THEN one coming soon message appears and no attempt starts`() =
@@ -30,15 +29,15 @@ internal class LoginModelTest {
             val news = collectNews(model = env.model)
             advanceUntilIdle()
 
-            env.model.onProviderSelected(providerId = LoginProviderId.Apple)
+            env.selectProvider(providerId = LoginProviderId.Apple)
             advanceUntilIdle()
 
             assertEquals(
-                expected = listOf(LoginStubs.stubComingSoonNews(displayName = StubLoginProvider.APPLE_DISPLAY_NAME)),
+                expected = listOf(StubLoginNews.stubComingSoonNews(displayName = StubLoginProvider.APPLE_DISPLAY_NAME)),
                 actual = news,
             )
             env.logInUseCase.invokeCall.notCalled()
-            assertFalse(env.model.dataState.value.isLoading)
+            assertEquals(expected = StubLoginUiState.stubLabelButton(), actual = env.model.uiState.value.button)
         }
 
     @Test
@@ -46,10 +45,21 @@ internal class LoginModelTest {
         val env = Environment(dispatchers = testDispatchers())
         advanceUntilIdle()
 
-        env.model.onProviderSelected(providerId = LoginProviderId.Google)
+        env.selectProvider(providerId = LoginProviderId.Google)
         advanceUntilIdle()
 
         env.logInUseCase.invokeCall.calledWith(LoginProviderId.Google)
+    }
+
+    @Test
+    fun `GIVEN the login button is clicked WHEN the screen is idle THEN provider selection is requested`() = runTest {
+        val env = Environment(dispatchers = testDispatchers())
+        advanceUntilIdle()
+
+        env.model.dispatch(LoginEvent.LoginClicked)
+        advanceUntilIdle()
+
+        assertEquals(expected = listOf<LoginOutput>(LoginOutput.OpenProviderSelection), actual = env.outputs)
     }
 
     @Test
@@ -62,11 +72,11 @@ internal class LoginModelTest {
             val news = collectNews(model = env.model)
             advanceUntilIdle()
 
-            env.model.onProviderSelected(providerId = LoginProviderId.Google)
+            env.selectProvider(providerId = LoginProviderId.Google)
             advanceUntilIdle()
 
             assertEquals(
-                expected = listOf(LoginStubs.stubUnavailableNews(displayName = StubLoginProvider.GOOGLE_DISPLAY_NAME)),
+                expected = listOf(StubLoginNews.stubUnavailableNews(displayName = StubLoginProvider.GOOGLE_DISPLAY_NAME)),
                 actual = news,
             )
         }
@@ -80,11 +90,11 @@ internal class LoginModelTest {
         val news = collectNews(model = env.model)
         advanceUntilIdle()
 
-        env.model.onProviderSelected(providerId = LoginProviderId.Google)
+        env.selectProvider(providerId = LoginProviderId.Google)
         advanceUntilIdle()
 
-        assertEquals(expected = listOf(LoginStubs.stubConnectivityFailureNews()), actual = news)
-        assertFalse(env.model.dataState.value.isLoading)
+        assertEquals(expected = listOf(StubLoginNews.stubConnectivityFailureNews()), actual = news)
+        assertEquals(expected = StubLoginUiState.stubLabelButton(), actual = env.model.uiState.value.button)
     }
 
     @Test
@@ -97,12 +107,12 @@ internal class LoginModelTest {
             val news = collectNews(model = env.model)
             advanceUntilIdle()
 
-            env.model.onProviderSelected(providerId = LoginProviderId.Google)
+            env.selectProvider(providerId = LoginProviderId.Google)
             advanceUntilIdle()
 
             assertEquals(
                 expected = listOf(
-                    LoginStubs.stubProviderFailureNews(displayName = StubLoginProvider.GOOGLE_DISPLAY_NAME),
+                    StubLoginNews.stubProviderFailureNews(displayName = StubLoginProvider.GOOGLE_DISPLAY_NAME),
                 ),
                 actual = news,
             )
@@ -115,11 +125,11 @@ internal class LoginModelTest {
             val news = collectNews(model = env.model)
             advanceUntilIdle()
 
-            env.model.onProviderSelected(providerId = LoginProviderId.Google)
+            env.selectProvider(providerId = LoginProviderId.Google)
             advanceUntilIdle()
 
             assertEquals(expected = emptyList(), actual = news)
-            assertFalse(env.model.dataState.value.isLoading)
+            assertEquals(expected = StubLoginUiState.stubLabelButton(), actual = env.model.uiState.value.button)
         }
 
     @Test
@@ -130,9 +140,9 @@ internal class LoginModelTest {
         )
         advanceUntilIdle()
 
-        env.model.onProviderSelected(providerId = LoginProviderId.Google)
+        env.selectProvider(providerId = LoginProviderId.Google)
         advanceUntilIdle()
-        env.model.onProviderSelected(providerId = LoginProviderId.Google)
+        env.selectProvider(providerId = LoginProviderId.Google)
         advanceUntilIdle()
 
         env.logInUseCase.invokeCall.called(times = 2)
@@ -143,8 +153,8 @@ internal class LoginModelTest {
         val env = Environment(dispatchers = testDispatchers())
         advanceUntilIdle()
 
-        env.model.onProviderSelected(providerId = LoginProviderId.Google)
-        env.model.onProviderSelected(providerId = LoginProviderId.Google)
+        env.selectProvider(providerId = LoginProviderId.Google)
+        env.selectProvider(providerId = LoginProviderId.Google)
         advanceUntilIdle()
 
         env.logInUseCase.invokeCall.called(times = 1)
@@ -158,18 +168,23 @@ internal class LoginModelTest {
 
         val logInUseCase = StubLogInUseCase(outcome = outcome)
         val observeLoginProvidersUseCase = StubObserveLoginProvidersUseCase(providers = providers)
-        val model: LoginModel = LoginModel.Factory(
+        val outputs = mutableListOf<LoginOutput>()
+        val model: LoginViewModel = LoginViewModel.Factory(
             coroutineDispatchers = dispatchers,
             logInUseCase = logInUseCase,
             observeLoginProvidersUseCase = observeLoginProvidersUseCase,
-        ).create()
+        ).invoke(output = outputs::add)
+
+        fun selectProvider(providerId: LoginProviderId) {
+            model.dispatch(LoginEvent.ProviderSelected(providerId = providerId))
+        }
     }
 }
 
-/** Returns a list that keeps receiving the model's one-shot news for the rest of the test. */
+/** Returns a list that keeps receiving the view model's one-shot news for the rest of the test. */
 @OptIn(ExperimentalCoroutinesApi::class)
-private fun TestScope.collectNews(model: LoginModel): List<LoginComponent.News> {
-    val news = mutableListOf<LoginComponent.News>()
+private fun TestScope.collectNews(model: LoginViewModel): List<LoginNews> {
+    val news = mutableListOf<LoginNews>()
     backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.news.toList(news) }
     return news
 }

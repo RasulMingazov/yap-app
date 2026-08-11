@@ -21,7 +21,8 @@ apps/mobile/
 ├── shared-app                 # shared UI entry point and iOS framework
 ├── app-root                   # bootstrap and composition root
 ├── feature-auth               # authentication presentation/orchestration
-├── core-common                # shared coroutine/presentation primitives
+├── core-common                # shared coroutine and network primitives
+├── core-decompose             # BaseViewModel for retained Decompose models
 ├── core-design                # shared visual primitives
 ├── core-network               # shared HTTP client infrastructure
 └── core-test                  # shared test utilities

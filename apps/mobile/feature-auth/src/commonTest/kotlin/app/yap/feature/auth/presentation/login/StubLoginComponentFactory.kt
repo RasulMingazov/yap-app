@@ -7,13 +7,13 @@ internal class StubLoginComponentFactory(
     val component: StubLoginComponent = StubLoginComponent(),
 ) : LoginComponent.Factory {
 
-    val createCall = StubCall1.returns<ComponentContext, LoginComponent>(component)
+    val invokeCall = StubCall1.returns<ComponentContext, LoginComponent>(component)
 
-    override fun create(
+    override fun invoke(
         componentContext: ComponentContext,
-        output: (LoginComponent.Output) -> Unit,
+        output: (LoginOutput) -> Unit,
     ): LoginComponent {
         component.output = output
-        return createCall.invoke(componentContext)
+        return invokeCall.invoke(componentContext)
     }
 }

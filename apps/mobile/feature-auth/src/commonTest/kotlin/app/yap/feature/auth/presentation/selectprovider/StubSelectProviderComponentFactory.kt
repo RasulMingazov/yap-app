@@ -5,13 +5,13 @@ import io.github.rasulmingazov.stubcall.StubCall1
 
 internal class StubSelectProviderComponentFactory : SelectProviderComponent.Factory {
 
-    val createCall = StubCall1.unit<ComponentContext>()
+    val invokeCall = StubCall1.unit<ComponentContext>()
 
-    override fun create(
+    override fun invoke(
         componentContext: ComponentContext,
-        output: (SelectProviderComponent.Output) -> Unit,
+        output: (SelectProviderOutput) -> Unit,
     ): SelectProviderComponent {
-        createCall.invoke(componentContext)
+        invokeCall.invoke(componentContext)
         return StubSelectProviderComponent(output = output)
     }
 }

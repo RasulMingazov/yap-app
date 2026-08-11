@@ -1,10 +1,8 @@
 package app.yap.feature.auth.presentation.login
 
-import app.yap.feature.auth.domain.entity.LoginProviderId
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.value.Value
 import kotlinx.coroutines.flow.Flow
-import org.jetbrains.compose.resources.StringResource
 
 /**
  * The entry screen. It owns its own copy, the login attempt, loading, failure, and cancellation
@@ -13,54 +11,16 @@ import org.jetbrains.compose.resources.StringResource
  */
 interface LoginComponent {
 
-    val news: Flow<News>
-    val uiState: Value<UiState>
+    val news: Flow<LoginNews>
+    val uiState: Value<LoginUiState>
 
-    fun dispatch(event: Event)
-
-    data class UiState(
-        val body: StringResource,
-        val button: Button,
-        val caption: StringResource,
-        val hero: StringResource,
-        val marquee: StringResource,
-        val topics: List<StringResource>,
-    ) {
-
-        /** The action button is either labelled or loading; loading replaces the label (R-027, AC-044). */
-        sealed interface Button {
-
-            data class Label(val text: StringResource) : Button
-
-            data object Loading : Button
-        }
-    }
-
-    sealed interface Event {
-
-        data object LoginClicked : Event
-
-        data class ProviderSelected(val providerId: LoginProviderId) : Event
-    }
-
-    sealed interface News {
-
-        data class ShowSnackbar(
-            val formatArgs: List<String>,
-            val message: StringResource,
-        ) : News
-    }
-
-    sealed interface Output {
-
-        data object OpenProviderSelection : Output
-    }
+    fun dispatch(event: LoginEvent)
 
     interface Factory {
 
-        fun create(
+        operator fun invoke(
             componentContext: ComponentContext,
-            output: (Output) -> Unit,
+            output: (LoginOutput) -> Unit,
         ): LoginComponent
     }
 }

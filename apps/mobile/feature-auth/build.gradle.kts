@@ -13,6 +13,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":apps:mobile:core-common"))
+            implementation(project(":apps:mobile:core-decompose"))
             implementation(project(":apps:mobile:core-design"))
             implementation(project(":apps:mobile:core-network"))
             implementation(project(":shared:contract:auth"))

@@ -62,6 +62,11 @@ Do not split a short, already-clear expression into several returns, and do not 
 non-local returns when they make control flow harder to follow. Preserve exhaustive `when`
 expressions when every outcome must be handled.
 
+Detekt's `ReturnCount` runs with `excludeGuardClauses: true`, so leading guard clauses never count
+against the limit. A `ReturnCount` violation therefore means returns are scattered through the body
+of a function, not that preconditions are checked up front — restructure the body rather than
+suppress the rule.
+
 ## Alphabetical ordering
 
 Prefer alphabetical order for declarations and arguments within the same semantic group:
@@ -74,12 +79,16 @@ Prefer alphabetical order for declarations and arguments within the same semanti
 - sibling factory bindings or registrations with equivalent roles.
 
 ```kotlin
-internal class LoginModel(
+internal class LoginViewModel(
     private val authenticateUseCase: AuthenticateUseCase,
     private val observeSessionUseCase: ObserveSessionUseCase,
     private val providerRegistry: ProviderRegistry,
+    coroutineDispatchers: CoroutineDispatchers,
 )
 ```
+
+Stored `private val` parameters form the first group and plain parameters the second; alphabetize
+within each group.
 
 Alphabetize required and defaulted parameters within their own groups when Kotlin requires those
 groups to remain separate. Do not alphabetize when order is part of a wire format, serialization

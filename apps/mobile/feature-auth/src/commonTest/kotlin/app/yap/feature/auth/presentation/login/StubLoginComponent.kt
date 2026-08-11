@@ -7,22 +7,22 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
 internal class StubLoginComponent(
-    uiState: LoginComponent.UiState = LoginStubs.stubUiState(),
+    uiState: LoginUiState = StubLoginUiState.stubLoginUiState(),
 ) : LoginComponent {
 
-    val dispatchCall = StubCall1.unit<LoginComponent.Event>()
+    val dispatchCall = StubCall1.unit<LoginEvent>()
     val mutableUiState = MutableValue(uiState)
 
     /** Observes the moment [dispatch] is invoked so a test can inspect the state of its collaborators. */
-    var onDispatch: (LoginComponent.Event) -> Unit = {}
+    var onDispatch: (LoginEvent) -> Unit = {}
 
-    /** Set by the factory so a test can emit an [LoginComponent.Output] as the real component would. */
-    var output: (LoginComponent.Output) -> Unit = {}
+    /** Set by the factory so a test can emit a [LoginOutput] as the real component would. */
+    var output: (LoginOutput) -> Unit = {}
 
-    override val news: Flow<LoginComponent.News> = emptyFlow()
-    override val uiState: Value<LoginComponent.UiState> = mutableUiState
+    override val news: Flow<LoginNews> = emptyFlow()
+    override val uiState: Value<LoginUiState> = mutableUiState
 
-    override fun dispatch(event: LoginComponent.Event) {
+    override fun dispatch(event: LoginEvent) {
         onDispatch(event)
         dispatchCall.invoke(event)
     }

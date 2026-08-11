@@ -30,7 +30,7 @@ Expose only what another Gradle module needs:
 - a narrow container, component factory, or platform facade.
 - Room entities and DAO contracts required by the zone database.
 
-Keep default components, models, mappers, use cases, repositories, sources, other
+Keep default components, view models, mappers, use cases, repositories, sources, other
 representations, and default containers `internal` or `private`. Public Room schema
 types are persistence integration details, not a general feature API. Hosts pass
 application or platform inputs into feature factories; they do not assemble feature
@@ -43,6 +43,8 @@ Use this as a menu, not an empty template:
 ```text
 feature-auth/src/commonMain/kotlin/app/yap/feature/auth/
 ├── presentation/
+│   ├── auth/         orchestrator: component, default, slot config
+│   └── login/        one screen slice, see Components
 ├── domain/
 │   ├── entity/
 │   ├── repository/
@@ -57,7 +59,9 @@ feature-auth/src/commonMain/kotlin/app/yap/feature/auth/
 └── di/
 ```
 
-Keep child presentation slices in focused packages such as `presentation/signin`.
+Keep child presentation slices in focused packages such as `presentation/signin`; the file set of a
+slice is fixed by [Components](presentation/components.md). Presentation extends `BaseViewModel`
+from `core-decompose`.
 
 ## Implementation order
 
@@ -65,11 +69,11 @@ Keep child presentation slices in focused packages such as `presentation/signin`
 2. Create the minimal feature module.
 3. Define required domain types and ports.
 4. Implement representations, adapters, mapping, and repositories.
-5. Add presentation contracts, models, mapping, and rendering.
+5. Add presentation contracts, view models, mapping, and rendering.
 6. Wire the container and expose one narrow entry point.
 7. Integrate the feature into its navigator.
 8. Add focused tests and verify Android and iOS compilation.
 
 Layer rules: [Domain](domain.md), [Repositories](data/repositories.md), [Data Sources](data/data-sources.md), and [Dependency Injection](dependency-injection.md).
 
-Presentation rules: [Components](presentation/components.md), [Models](presentation/models.md), [UI and Compose](presentation/ui-compose.md), [Child Components](presentation/child-components.md), [Navigation](presentation/navigation.md), and [Retention](presentation/retention.md).
+Presentation rules: [Components](presentation/components.md), [View Models](presentation/view-models.md), [UI and Compose](presentation/ui-compose.md), [Child Components](presentation/child-components.md), [Navigation](presentation/navigation.md), and [Retention](presentation/retention.md).

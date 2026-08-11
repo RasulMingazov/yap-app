@@ -1,89 +1,135 @@
 # Components
 
-## Contract
-
 `Component` is the public lifecycle-aware boundary between shared logic and UI.
 
 - Expose state as read-only `Value<UiState>`, never `StateFlow` or `MutableValue`.
 - Assign each `Value` once; do not recreate it from a property getter.
-- Expose one-shot `Flow<News>`, `Event`, child contracts, and `Factory` only when needed.
+- Expose `Flow<News>`, `Output`, child contracts, and `Factory` only when needed.
 - Name events after intent: `SendClicked`, `TextChanged`, `ErrorDismissed`.
-- Nest `UiState`, `News`, `Event`, and their payloads in the component that owns them. Refer to
-  them as `ProfileComponent.UiState`, `ProfileComponent.News`, and `ProfileComponent.Event`; do
-  not create top-level `ProfileUiState`, `ProfileNews`, or `ProfileEvent` types.
 - Keep the public surface minimal and free from broad domain aggregates.
 
-## Default implementation
+## Slice layout
 
-Every component has an `internal Default...Component`.
+One top-level declaration per file, named `<Slice><Role>.kt`. Do not nest `UiState`, `Event`,
+`News`, or `Output` inside the component; nest only sub-shapes of a state, such as
+`LoginUiState.Button`.
 
-- Delegate `ComponentContext`, own the model, expose state, and forward events.
-- Keep business rules in the model and mapping in the mapper.
-- Accept `Model.Factory` and create the model through `instanceKeeper.getOrCreate(modelFactory::create)`.
-- Do not proxy model dependencies through the component constructor.
-- Reference children through their interfaces and drive them through events.
-- A component factory creates a new component; `Model.Factory` creates a fresh model only when `InstanceKeeper` has none.
+```text
+login/
+├── LoginComponent.kt         contract              required
+├── DefaultLoginComponent.kt  wiring only           required
+├── LoginViewModel.kt         behavior              required
+├── LoginDataState.kt         domain-shaped state   required
+├── LoginUiState.kt           render-ready state    required
+├── LoginUiStateMapper.kt     DataState -> UiState  required
+├── LoginEvent.kt             UI intent             required
+├── LoginNews.kt              one-shot effects      only when the screen emits them
+├── LoginNewsMapper.kt        domain reason -> News only when copy selection is non-trivial
+└── LoginOutput.kt            messages to parent    only when the parent must react
+```
+
+This file set describes a **screen slice**. A host or orchestrator component owns none of it:
+`AuthComponent` is just a contract, a default implementation, and `AuthSlotConfig.kt`, with no view
+model, `DataState`, `UiState`, or `Event`. Navigation configurations live in `<Owner>SlotConfig.kt`
+(see [Navigation](navigation.md) and [Child Components](child-components.md)).
+
+## Canonical slice
 
 ```kotlin
-interface ProfileComponent {
+interface LoginComponent {
 
-    val uiState: Value<UiState>
-    val news: Flow<News>
+    val news: Flow<LoginNews>
+    val uiState: Value<LoginUiState>
 
-    fun onEvent(event: Event)
+    fun dispatch(event: LoginEvent)
 
-    data class UiState(
-        val error: Error?,
-        val isLoading: Boolean,
-    ) {
+    interface Factory {
 
-        data class Error(
-            val message: StringResource,
-        )
-    }
-
-    sealed interface News {
-
-        data class ShowSnackbar(
-            val message: StringResource,
-        ) : News
-    }
-
-    sealed interface Event {
-
-        data object RetryClicked : Event
+        operator fun invoke(
+            componentContext: ComponentContext,
+            output: (LoginOutput) -> Unit,
+        ): LoginComponent
     }
 }
 
-internal class DefaultProfileComponent(
+sealed interface LoginEvent {
+
+    data object LoginClicked : LoginEvent
+
+    data class ProviderSelected(val providerId: LoginProviderId) : LoginEvent
+}
+
+sealed interface LoginNews {
+
+    data class ShowSnackbar(val formatArgs: List<String>, val message: StringResource) : LoginNews
+}
+
+sealed interface LoginOutput {
+
+    data object OpenProviderSelection : LoginOutput
+}
+
+internal data class LoginDataState(
+    val isLoading: Boolean = false,
+    val providers: List<LoginProvider> = emptyList(),
+)
+
+internal class DefaultLoginComponent(
+    private val output: (LoginOutput) -> Unit,
     componentContext: ComponentContext,
-    modelFactory: ProfileModel.Factory,
-) : ProfileComponent, ComponentContext by componentContext {
+    viewModelFactory: LoginViewModel.Factory,
+) : LoginComponent, ComponentContext by componentContext {
 
-    private val model = instanceKeeper.getOrCreate(modelFactory::create)
-}
+    private val model = instanceKeeper.getOrCreate { viewModelFactory.invoke(output) }
 
-internal class ProfileModel(
-    private val observeProfileUseCase: ObserveProfileUseCase,
-) :
-    BaseModel(/* ... */),
-    InstanceKeeper.Instance {
+    override val news: Flow<LoginNews> = model.news
+    override val uiState: Value<LoginUiState> = model.uiState
 
-    override fun onDestroy() = clear()
+    override fun dispatch(event: LoginEvent) = model.dispatch(event)
 
     class Factory(
-        private val observeProfileUseCase: ObserveProfileUseCase,
-    ) {
+        private val viewModelFactory: LoginViewModel.Factory,
+    ) : LoginComponent.Factory {
 
-        fun create(): ProfileModel = ProfileModel(
-            observeProfileUseCase = observeProfileUseCase,
-        )
+        override fun invoke(
+            componentContext: ComponentContext,
+            output: (LoginOutput) -> Unit,
+        ): LoginComponent = DefaultLoginComponent(/* ... */)
     }
 }
 ```
 
-Declare the model below the default component in the same file. Detailed model rules are in [Models](models.md).
+`UiState`, `UiStateMapper`, and `ViewModel` are in [View models](view-models.md) and
+[UI and Compose](ui-compose.md).
 
-`Value` is the component state contract from the first implemented feature. Internal
-model mechanics may change without changing that boundary; `StateFlow` never leaks
-through `Component`.
+## Default implementation
+
+`Default...Component` is wiring and nothing else.
+
+- Delegate `ComponentContext`, create the view model with
+  `instanceKeeper.getOrCreate { viewModelFactory.invoke(output) }`, re-expose its `uiState` and
+  `news`, and forward `dispatch` as a one-line expression body.
+- Keep business rules in the view model and mapping in the mapper.
+- Do not proxy view-model dependencies through the component constructor.
+- Reference children through their interfaces and drive them through events.
+- Register `backHandler` here when the screen owns a back gesture.
+
+## Output
+
+A child never navigates and never reaches for its parent. It reports through
+`output: (XOutput) -> Unit`, threaded identically at every hop:
+`Component.Factory` → `Default...Component` → `ViewModel.Factory` → `ViewModel`.
+
+- The parent decides what an `Output` means and sequences the consequences. In
+  `DefaultAuthComponent`, `SelectProviderOutput.ProviderSelected` dismisses the slot first, then
+  dispatches `LoginEvent.ProviderSelected`.
+- Use `Output` for messages the parent must act on and `News` for effects the screen's own UI
+  performs.
+
+## Visibility
+
+Public: `Component`, `UiState`, `Event`, `News`, `Output`.
+Internal: `Default...Component`, `ViewModel`, `DataState`, `UiStateMapper`, `SlotConfig`.
+
+`Value` is the component state contract. Internal view-model mechanics may change without changing
+that boundary; `StateFlow` never leaks through `Component`.

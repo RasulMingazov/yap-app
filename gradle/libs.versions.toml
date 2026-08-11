@@ -34,6 +34,7 @@ auth0-java-jwt = { group = "com.auth0", name = "java-jwt", version.ref = "auth0J
 auth0-jwks-rsa = { group = "com.auth0", name = "jwks-rsa", version.ref = "auth0Jwks" }
 decompose = { group = "com.arkivanov.decompose", name = "decompose", version.ref = "decompose" }
 decompose-extensions-compose = { group = "com.arkivanov.decompose", name = "extensions-compose", version.ref = "decompose" }
+essenty-instance-keeper = { group = "com.arkivanov.essenty", name = "instance-keeper", version.ref = "essenty" }
 essenty-lifecycle = { group = "com.arkivanov.essenty", name = "lifecycle", version.ref = "essenty" }
 exposed-core = { group = "org.jetbrains.exposed", name = "exposed-core", version.ref = "exposed" }
 exposed-jdbc = { group = "org.jetbrains.exposed", name = "exposed-jdbc", version.ref = "exposed" }
