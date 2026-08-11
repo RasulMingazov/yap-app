@@ -128,54 +128,67 @@ chosen from observed session state. It never names `Login` or `SelectProvider` (
   lifecycle are `AuthComponent` state (R-093). No `ChildSlot`, `ChildStack`, or slot navigation
   exists inside `LoginComponent`.
 
-Outputs, declared as constructor callbacks on the children and handled only by `AuthComponent`
-(R-088, R-089):
+Each child receives an `output: (XOutput) -> Unit` lambda through its factory, and only
+`AuthComponent` acts on what it emits (R-088, R-089). Presentation types are top-level and prefixed
+with the slice name, per
+[`docs/mobile/presentation/components.md`](../../docs/mobile/presentation/components.md):
 
 ```kotlin
 interface LoginComponent {
-    fun dispatch(event: Event)
+    fun dispatch(event: LoginEvent)
 
-    sealed interface Event {
-        data object LoginClicked : Event
-        data class ProviderSelected(val providerId: LoginProviderId) : Event
-    }
-
-    sealed interface Output {
-        data object OpenProviderSelection : Output
+    interface Factory {
+        operator fun invoke(
+            componentContext: ComponentContext,
+            output: (LoginOutput) -> Unit,
+        ): LoginComponent
     }
 }
 
-interface SelectProviderComponent {
-    sealed interface Output {
-        data object Dismissed : Output
-        data class ProviderSelected(val providerId: LoginProviderId) : Output
-    }
+sealed interface LoginEvent {
+    data object LoginClicked : LoginEvent
+    data class ProviderSelected(val providerId: LoginProviderId) : LoginEvent
+}
+
+sealed interface LoginOutput {
+    data object OpenProviderSelection : LoginOutput
+}
+
+sealed interface SelectProviderOutput {
+    data object Dismissed : SelectProviderOutput
+    data class ProviderSelected(val providerId: LoginProviderId) : SelectProviderOutput
 }
 ```
 
 Event flow:
 
-1. `ВОЙТИ` → `login.dispatch(LoginComponent.Event.LoginClicked)` → `LoginComponent` emits
-   `Output.OpenProviderSelection` unless its own attempt guard is active.
-2. `AuthComponent` activates the slot unless it is already active or transitioning
-   (cross-screen duplicate-action guard, R-090, AC-059).
-3. Scrim tap or system back → `SelectProviderComponent` emits `Output.Dismissed` →
+1. `ВОЙТИ` → `login.dispatch(LoginEvent.LoginClicked)` → `LoginComponent` emits
+   `LoginOutput.OpenProviderSelection` unless its own attempt guard is active.
+2. `AuthComponent` activates the slot. Re-activating with the same configuration keeps the existing
+   child, so a repeated request presents the sheet once (R-090, AC-059).
+3. Scrim tap or system back → `SelectProviderComponent` emits `SelectProviderOutput.Dismissed` →
    `AuthComponent` clears the slot; the same `LoginComponent` instance and state are revealed
    (AC-056).
-4. Row tap → `SelectProviderComponent` emits `Output.ProviderSelected(providerId)` →
+4. Row tap → `SelectProviderComponent` emits `SelectProviderOutput.ProviderSelected(providerId)` →
    `AuthComponent` clears the slot **first**, then calls
-   `login.dispatch(LoginComponent.Event.ProviderSelected(providerId))` exactly once (R-026, R-089,
+   `login.dispatch(LoginEvent.ProviderSelected(providerId))` exactly once (R-026, R-089,
    AC-057, AC-058).
-5. `LoginModel` handles the dispatched provider event: a disabled provider emits one-shot
-   `ShowSnackbar` news; an enabled provider starts the attempt and owns loading, cancellation,
-   failure, success, and duplicate-attempt protection (R-090, R-095).
+5. `LoginViewModel` handles the dispatched provider event: a disabled provider emits one-shot
+   `ShowSnackbar` news and starts nothing; an enabled provider starts the attempt and owns loading,
+   cancellation, failure, success, and duplicate-attempt protection (R-090, R-095).
 
-`AuthComponent` exposes no `UiState`: it owns no screen content, and the only thing the overlay
-composition needs — whether the sheet is presented — is already `selectProviderSlot.child`, which
-also carries the child the sheet renders. Its retained duplicate-action guard stays internal to
-`AuthModel`. `LoginComponent.UiState` and `SelectProviderComponent.UiState` carry their own screen
-content. `AuthContent` composes `LoginContent` and, when the slot is active, presents
-`SelectProviderContent` as the modal bottom sheet with the baseline scrim (R-093).
+`AuthComponent` exposes no `UiState` and owns no view model: it holds no screen content, and the
+only thing the overlay composition needs — whether the sheet is presented — is already
+`selectProvider.child`, which also carries the child the sheet renders. That same value is the
+cross-screen duplicate-action guard, so an output from an already-dismissed sheet is ignored; no
+retained model exists to hold a separate flag. `LoginUiState` and `SelectProviderUiState` carry
+their own screen content. `AuthContent` composes `LoginContent` and, when the slot is active,
+presents `SelectProviderContent` as the modal bottom sheet with the baseline scrim (R-093).
+
+`AuthSlotConfig` is a `@Serializable sealed interface` and the slot is created with a real
+serializer, so a process death while the sheet is open restores it. `SelectProvider` rebuilds its
+rows from `ObserveLoginProvidersUseCase` and `Login` keeps its own state, so nothing is restored
+half-way (R-092, R-093).
 
 ### Wire contract (`shared/contract/auth`) — exact fields
 
@@ -515,12 +528,13 @@ apps/mobile/feature-auth/src/commonMain/kotlin/app/yap/feature/auth/
 │   ├── remote/     AuthApi (Ktor), DTO translation
 │   └── repository/ DefaultSessionRepository, DefaultLoginProviderRepository
 ├── presentation/
-│   ├── auth/           AuthComponent.kt, DefaultAuthComponent.kt (+ AuthModel), AuthContent.kt
-│   ├── login/          LoginComponent.kt, DefaultLoginComponent.kt (+ LoginModel),
-│   │                   LoginUiStateMapper.kt, LoginContent.kt
-│   └── selectprovider/ SelectProviderComponent.kt, DefaultSelectProviderComponent.kt
-│                       (+ SelectProviderModel), SelectProviderUiStateMapper.kt,
-│                       SelectProviderContent.kt
+│   ├── auth/           AuthComponent.kt, DefaultAuthComponent.kt, AuthSlotConfig.kt,
+│   │                   AuthContent.kt
+│   ├── login/          LoginComponent.kt, DefaultLoginComponent.kt, LoginViewModel.kt,
+│   │                   LoginDataState.kt, LoginUiState.kt, LoginUiStateMapper.kt,
+│   │                   LoginEvent.kt, LoginNews.kt, LoginNewsMapper.kt, LoginOutput.kt,
+│   │                   LoginContent.kt
+│   └── selectprovider/ same file set without News; SelectProviderContent.kt
 ├── analytics/      LoginAnalytics (public port), LoginAnalyticsEvent
 └── di/             AuthContainer, DefaultAuthContainer, createAuthContainer(...)
 ```
@@ -560,13 +574,14 @@ apps/mobile/feature-auth/src/commonMain/kotlin/app/yap/feature/auth/
 
 ### Mobile presentation details
 
-- `LoginComponent.UiState` carries marquee text, hero, rotating topics, body, button label, caption,
-  and `isLoading`. `SelectProviderComponent.UiState` carries the ordered provider rows with stable
-  keys, display names, icon tokens, enabled state, and the empty-state message (R-069, AC-041,
-  AC-016).
-- One-shot output is `News`: `LoginComponent.News.ShowSnackbar(message)` for a disabled provider, a
+- `LoginUiState` carries marquee text, hero, rotating topics, body, button label, caption, and the
+  loading button state. `SelectProviderUiState` carries the ordered provider rows with stable keys,
+  display names, icon tokens, enabled state, the empty-state message, and `isLoading` while the
+  configuration has not arrived (R-069, AC-041, AC-016).
+- One-shot output is `News`: `LoginNews.ShowSnackbar(formatArgs, message)` for a disabled provider, a
   configuration failure, and a recoverable failure. Cancellation emits nothing (R-029, AC-042). Copy
-  selection happens in the model/mapper, never in a composable.
+  selection happens in the view model or a mapper, never in a composable: `toUiState()` selects
+  screen copy and `LoginFailure.toNews(displayName)` selects failure copy.
 - `LoginContent` renders the frozen baseline with Compose primitives: the marquee is two identical
   text copies translated `0 → -50%` in an infinite linear 15s animation; the topic roller uses the
   three-step keyframe timing above; reduced motion is read through a new
@@ -664,13 +679,13 @@ Test-first for every behavior change, following
 - **`AuthComponent` orchestration tests** — `Login` output presents `SelectProvider`; `Dismissed`
   returns to the unchanged `Login` child without recreating it; `ProviderSelected` reaches
   `AuthComponent`, which clears the slot before dispatching
-  `LoginComponent.Event.ProviderSelected` to `Login` exactly once; duplicate actions are blocked
+  `LoginEvent.ProviderSelected` to `Login` exactly once; duplicate actions are blocked
   across the transition; `Login` state survives presentation and dismissal (AC-055…AC-059).
 - **Structural tests** — assert that `LoginComponent` sources reference neither
   `SelectProviderComponent` nor any slot navigation, that `SelectProviderComponent` references no
   `LoginComponent`, and that `app-root` references neither screen (AC-060, AC-061).
-- **Screen model tests** — disabled-provider news, configuration-failure news, enabled dispatch,
-  cancellation without news, retry after failure, loading always ending.
+- **Screen view model tests** — disabled-provider news with no attempt started, configuration-failure
+  news, enabled dispatch, cancellation without news, retry after failure, loading always ending.
 - **Mobile repository tests** — restore, single-flight refresh, one retry, definitive rejection
   clearing storage, transient failure preserving it, offline provisional start, attempt preparation
   ordering (prepare → challenge → authenticate → discard), and refusal to reuse a discarded attempt.

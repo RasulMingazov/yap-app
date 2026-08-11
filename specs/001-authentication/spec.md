@@ -399,7 +399,7 @@ row, and adapter shells behind the common provider port, with no working T-ID lo
 - **R-089**: The two screens communicate only through `Auth`. `Login` emits an "open provider
   selection" output. `SelectProvider` emits either "dismissed" or "provider selected" carrying the
   provider-neutral identifier. After handling the selection, `Auth` drives `Login` only through its
-  public event API: `login.dispatch(LoginComponent.Event.ProviderSelected(providerId))`.
+  public event API: `login.dispatch(LoginEvent.ProviderSelected(providerId))`.
 - **R-090**: `Auth` owns navigation state, presentation and dismissal of `SelectProvider`,
   and duplicate-action protection while the two screens transition. On "provider selected" it
   dismisses `SelectProvider`, returns to `Login`, and only then dispatches `ProviderSelected` to
@@ -593,7 +593,7 @@ row, and adapter shells behind the common provider port, with no working T-ID lo
   state, and `Login` is not recreated.
 - **AC-057**: A `SelectProvider` "provider selected" output is delivered to `Auth`, never directly
   to `Login`; after dismissing `SelectProvider`, `Auth` calls
-  `login.dispatch(LoginComponent.Event.ProviderSelected(providerId))` exactly once.
+  `login.dispatch(LoginEvent.ProviderSelected(providerId))` exactly once.
 - **AC-058**: `SelectProvider` is dismissed before loading starts and before the provider flow is
   launched.
 - **AC-059**: Duplicate actions are blocked across the transition: repeated `ВОЙТИ` taps while

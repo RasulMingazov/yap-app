@@ -139,33 +139,34 @@ no SDK, writes no exchange code, and claims no T-ID verification. Its deferred q
   Apple hidden on Android)
 - [x] **T033** Add the Russian string resources for both screens to `feature-auth` Compose resources
   verbatim from the frozen baseline and the specification (R-067, R-068, AC-039)
-- [x] **T034** Implement `SelectProviderComponent` with `Output.Dismissed` and
-  `Output.ProviderSelected`, its default component, model, and mapper. It must contain no reference
-  to `LoginComponent` (R-088, R-091)
+- [x] **T034** Implement `SelectProviderComponent` with `SelectProviderOutput.Dismissed` and
+  `SelectProviderOutput.ProviderSelected`, its default component, view model, and mapper. It must
+  contain no reference to `LoginComponent` (R-088, R-091)
 - [x] **T035** Add failing `LoginUiStateMapperTest` cases for marquee, hero, topics, body, button
   label, caption, and the loading state that replaces the label (R-003, AC-044)
-- [x] **T036** Implement `LoginComponent` with `Output.OpenProviderSelection`, its default
-  component, `LoginModel`, mapper, and the public `dispatch(Event)` API with `LoginClicked` and
-  `ProviderSelected(providerId)`. It must declare no slot navigation and no reference to
+- [x] **T036** Implement `LoginComponent` with `LoginOutput.OpenProviderSelection`, its default
+  component, `LoginViewModel`, mapper, and the public `dispatch(LoginEvent)` API with `LoginClicked`
+  and `ProviderSelected(providerId)`. It must declare no slot navigation and no reference to
   `SelectProviderComponent` (R-088, R-089, R-093)
 - [x] **T037** Add failing `AuthComponentTest` orchestration cases: a `Login`
   `OpenProviderSelection` output presents `SelectProvider` through `AuthComponent`; `Dismissed`
   returns to the same unchanged `Login` child without recreating it; `ProviderSelected` is delivered
   to `AuthComponent`; the slot is cleared before Auth calls
-  `login.dispatch(LoginComponent.Event.ProviderSelected(providerId))` exactly once; duplicate
+  `login.dispatch(LoginEvent.ProviderSelected(providerId))` exactly once; duplicate
   actions are blocked across the transition; and `Login` state is preserved while `SelectProvider`
   is presented (R-087…R-095, AC-055…AC-059)
 - [x] **T038** Add failing structural tests asserting `LoginComponent` sources reference neither
   `SelectProviderComponent` nor any slot navigation, `SelectProviderComponent` references no
   `LoginComponent`, and `app-root` references neither screen (AC-060, AC-061)
-- [x] **T039** Add failing `LoginModelTest` cases for `dispatch(ProviderSelected(...))`: disabled-provider
+- [x] **T039** Add failing `LoginViewModelTest` cases for `dispatch(ProviderSelected(...))`: disabled-provider
   news exactly once, configuration-failure news, enabled dispatch, cancellation emitting no news,
   retry after failure, loading always ending, and duplicate provider events starting at most one
   attempt (R-027…R-031, R-090, AC-023…AC-029, AC-042)
-- [x] **T040** Implement `AuthComponent`, `DefaultAuthComponent`, and `AuthModel`: the permanent
-  `Login` child, the `ChildSlot` holding `SelectProvider`, output handling, and the cross-screen
-  duplicate-action guard; then implement the tested `LoginModel` provider-event behavior and
-  `AuthStubs`, `LoginStubs`, and `SelectProviderStubs`
+- [x] **T040** Implement `AuthComponent` and `DefaultAuthComponent`: the permanent `Login` child, the
+  serialized `ChildSlot` holding `SelectProvider`, output handling, and the cross-screen
+  duplicate-action guard derived from slot presence — the orchestrator owns no view model; then
+  implement the tested `LoginViewModel` provider-event behavior and the per-type presentation stubs
+  (`StubLoginUiState`, `StubLoginDataState`, `StubLoginNews`, and the `SelectProvider` equivalents)
 - [x] **T041** **Mobile logic checkpoint** — run `./gradlew :apps:mobile:feature-auth:allTests`
 
 ## Phase 7 — Compose rendering of the frozen baseline
@@ -277,8 +278,9 @@ no SDK, writes no exchange code, and claims no T-ID verification. Its deferred q
   started, cancellation, coarse failure, success — segmented by platform and provider and containing
   no tokens, codes, verifiers, nonces, email, or subjects (R-070…R-072, AC-046)
 - [ ] **T075** Add the public provider-neutral `LoginAnalytics` port and its events in
-  `apps/mobile/feature-auth/src/.../analytics/`; emit navigation/selection events from `AuthModel`
-  and attempt lifecycle events from `LoginModel`, then bind a no-op implementation in
+  `apps/mobile/feature-auth/src/.../analytics/`; emit navigation/selection events from
+  `DefaultAuthComponent` — the orchestrator owns no view model — and attempt lifecycle events from
+  `LoginViewModel`, then bind a no-op implementation in
   `apps/mobile/app-root` (R-073)
 
 ## Final verification
