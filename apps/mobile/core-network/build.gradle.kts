@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.yap.kmp.library)
+    alias(libs.plugins.yap.koin)
     alias(libs.plugins.yap.serialization)
 }
 

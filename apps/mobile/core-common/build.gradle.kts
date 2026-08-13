@@ -5,6 +5,7 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
+            api(libs.lifecycle.viewmodel)
             implementation(libs.kotlinx.coroutines.core)
         }
     }

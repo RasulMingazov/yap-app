@@ -50,9 +50,21 @@ gradlePlugin {
             id = "app.yap.kmp.library"
             implementationClass = "app.yap.convention.KmpLibraryPlugin"
         }
+        register("koin") {
+            id = "app.yap.koin"
+            implementationClass = "app.yap.convention.KoinPlugin"
+        }
+        register("koinCompose") {
+            id = "app.yap.koin.compose"
+            implementationClass = "app.yap.convention.KoinComposePlugin"
+        }
         register("ktorServer") {
             id = "app.yap.ktor.server"
             implementationClass = "app.yap.convention.KtorServerPlugin"
+        }
+        register("navigation3Compose") {
+            id = "app.yap.navigation3"
+            implementationClass = "app.yap.convention.Navigation3ComposePlugin"
         }
         register("serialization") {
             id = "app.yap.serialization"

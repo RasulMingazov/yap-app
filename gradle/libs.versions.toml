@@ -3,17 +3,20 @@ agp = "9.2.1"
 auth0Jwt = "4.5.0"
 composeMultiplatform = "1.11.1"
 composeMaterial3 = "1.9.0"
-compileSdk = "36"
+compileSdk = "37"
 detekt = "2.0.0-alpha.5"
 exposed = "0.61.0"
 flyway = "12.0.3"
 hikaricp = "6.2.1"
 java = "17"
+koin = "4.2.2"
 kotlin = "2.4.0"
 kotlinCoroutines = "1.11.0"
 kotlinSerialization = "1.11.0"
 ktor = "3.5.0"
+lifecycle = "2.11.0"
 minSdk = "24"
+navigation3 = "1.1.1"
 postgresql = "42.7.7"
 slf4j = "2.0.16"
 stubcall = "0.1.0"
@@ -36,6 +39,11 @@ compose-material3 = { group = "org.jetbrains.compose.material3", name = "materia
 compose-resources = { group = "org.jetbrains.compose.components", name = "components-resources", version.ref = "composeMultiplatform" }
 compose-runtime = { group = "org.jetbrains.compose.runtime", name = "runtime", version.ref = "composeMultiplatform" }
 compose-ui = { group = "org.jetbrains.compose.ui", name = "ui", version.ref = "composeMultiplatform" }
+koin-compose = { group = "io.insert-koin", name = "koin-compose", version.ref = "koin" }
+koin-compose-navigation3 = { group = "io.insert-koin", name = "koin-compose-navigation3", version.ref = "koin" }
+koin-compose-viewmodel = { group = "io.insert-koin", name = "koin-compose-viewmodel", version.ref = "koin" }
+koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
+koin-test = { group = "io.insert-koin", name = "koin-test", version.ref = "koin" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinCoroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinCoroutines" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinSerialization" }
@@ -48,6 +56,10 @@ ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlin
 ktor-server-content-negotiation = { group = "io.ktor", name = "ktor-server-content-negotiation", version.ref = "ktor" }
 ktor-server-core = { group = "io.ktor", name = "ktor-server-core", version.ref = "ktor" }
 ktor-server-netty = { group = "io.ktor", name = "ktor-server-netty", version.ref = "ktor" }
+lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "lifecycle" }
+lifecycle-viewmodel-navigation3 = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3" }
+navigation3-ui = { group = "org.jetbrains.androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3" }
 gradle-plugin-android-tools = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 gradle-plugin-compose = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "composeMultiplatform" }
 gradle-plugin-detekt = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
@@ -68,6 +80,9 @@ yap-compose-multiplatform = { id = "app.yap.compose.multiplatform" }
 yap-detekt = { id = "app.yap.detekt" }
 yap-jvm-library = { id = "app.yap.jvm.library" }
 yap-kmp-library = { id = "app.yap.kmp.library" }
+yap-koin = { id = "app.yap.koin" }
+yap-koin-compose = { id = "app.yap.koin.compose" }
 yap-ktor-server = { id = "app.yap.ktor.server" }
+yap-navigation3 = { id = "app.yap.navigation3" }
 yap-serialization = { id = "app.yap.serialization" }
 yap-server-application = { id = "app.yap.server.application" }
