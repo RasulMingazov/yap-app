@@ -15,3 +15,6 @@ DerivedData/
 local.properties
 .claude/*
 !.claude/settings.json
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/speckit-*/
