@@ -10,4 +10,4 @@ Each feature owns its persisted data while shared database infrastructure remain
 - Keep Flyway migrations forward-only under the feature's `src/main/resources/db/migration`.
 - Translate persistence-specific failures at the persistence boundary.
 
-PostgreSQL-specific behavior follows [Backend Integration](../testing/006-backend-integration.md).
+PostgreSQL-specific behavior follows [Backend Integration](../testing/003-backend-integration.md).

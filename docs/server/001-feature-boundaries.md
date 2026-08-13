@@ -37,4 +37,4 @@ feature-auth/
 - Default declarations to `internal`; widen visibility for a real boundary only.
 - Wire dependencies manually.
 
-Persistence rules follow [Server Persistence](persistence.md).
+Persistence rules follow [Server Persistence](002-persistence.md).

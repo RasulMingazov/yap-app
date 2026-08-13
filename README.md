@@ -41,8 +41,9 @@ auth contract.
 ## Documentation
 
 Start with [`docs/README.md`](docs/README.md), then read only the guides relevant
-to the area being changed. The minimal `/specf-*` commands use a project-local
-Claude workflow; feature artifacts live in `specs`.
+to the area being changed. Android platform mechanics come from the official
+[`android/skills`](https://github.com/android/skills) plugin, enabled for this
+repository in `.claude/settings.json`.
 
 ## Build
 

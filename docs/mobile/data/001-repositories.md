@@ -1,6 +1,6 @@
 # Repositories
 
-The repository interface lives in `domain/repository`. Its implementation, mapping, cache, and coordination live in `data/repository`.
+Both the port and its implementation live in `impl`: the interface in `domain/repository`, the implementation, mapping, cache, and coordination in `data/repository`. A repository never crosses into `api`.
 
 ## Boundary
 
@@ -36,7 +36,7 @@ Persistent storage is the cached and observable source. Do not duplicate its sna
 - Preserve the last successful cache on failure unless invalidation is an explicit domain outcome.
 - Observation emits local snapshots and never starts network or storage work.
 
-Use a focused DAO directly when it provides the boundary. Add `LocalDataSource` only when it coordinates several storage APIs or real platform behavior.
+Add a `LocalDataSource` only when it coordinates several storage APIs or real platform behavior.
 
 ## Concurrency and mutations
 
@@ -47,10 +47,10 @@ Use a focused DAO directly when it provides the boundary. Add `LocalDataSource` 
 - Update or invalidate cache before returning from a successful mutation.
 - Publish an authoritative response instead of fetching it again when it contains enough data.
 
-Every repository operation consumed by presentation is wrapped in a use-case contract. Models receive those use cases instead of repositories, so presentation tests stub only the use-case boundary. Observation and fetch remain separate so the model owns loading and retry.
+Every repository operation consumed by presentation is wrapped in a use-case contract. View models receive those use cases instead of repositories, so presentation tests stub only the use-case boundary. Observation and fetch remain separate so the view model owns loading and retry.
 
 ## Verification
 
 Cover initial load, cache reuse, forced refresh, failed-refresh preservation, mutation consistency, concurrency, and cancellation. Use data-source and storage stubs; follow [Test Structure](../../testing/001-structure.md).
 
-Representations and mapping follow [Data Sources](data-sources.md). Physical database ownership follows [Persistence](persistence.md).
+Representations and mapping follow [Data Sources](002-data-sources.md).

@@ -67,4 +67,4 @@ internal class StubGetUserUseCase(
 - Configure results and failures and verify calls through that property in tests.
 - Presentation tests stub use cases, never repositories.
 - Keep repository and data-source test doubles local to tests of the layer that owns those contracts; do not export them as presentation fixtures.
-- Use `MutableValue` exposed as read-only `Value` for presentation component state. Use a focused `StateFlow` stub only when the owning domain or data contract is flow-based.
+- Expose stubbed observation as `MutableStateFlow` behind a read-only `StateFlow` or `Flow`, matching the contract being stubbed.

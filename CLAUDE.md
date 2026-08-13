@@ -16,8 +16,8 @@ relevant to the current change.
   domain, data, repositories, and presentation rules.
 - **[`docs/server/README.md`](docs/server/README.md)** — routing index for server
   module, service, adapter, and persistence rules.
-- **[`docs/shared/README.md`](docs/shared/README.md)** — DTO naming and wire-boundary
-  rules for `shared/contract/*` and its mobile/server consumers.
+- **[`docs/shared/README.md`](docs/shared/README.md)** — routing index for DTO naming
+  and wire-boundary rules for `shared/contract/*` and its mobile/server consumers.
 - **[`docs/testing/README.md`](docs/testing/README.md)** — routing index for test
   structure, unit-test support, and backend integration verification. Read each
   relevant document before changing tests or shared test support.
@@ -26,10 +26,11 @@ An intentional exception to a documented architecture rule must be justified in 
 PR description or reflected by updating the owning guide. Do not silently work
 around the rule.
 
-When using a `/specf-*` command, read the relevant `docs/*` guides before finalizing
-`plan.md` or `tasks.md`. Feature artifacts refine behavior; they do not override
-project rules. Work in this order:
-`relevant docs → spec/plan/tasks → implementation → verification`.
+Android platform mechanics — Navigation 3, Compose adaptive layout and theming, and
+test-harness setup — come from the official `android-skills` plugin, enabled in
+`.claude/settings.json`. The guides above cover only what this project decides on top
+of it. Work in this order:
+`relevant docs → implementation → verification`.
 
 ## Verification
 
@@ -50,7 +51,7 @@ Branch names MUST be prefixed by kind: `feature/...` for new functionality,
 Run `git config core.hooksPath .githooks` once per clone — enables the `pre-push`
 hook that blocks pushing Detekt violations.
 
-`stubcall` (test stubs, see [`docs/testing/003-stubs.md`](docs/testing/003-stubs.md))
+`stubcall` (test stubs, see [`docs/testing/002-stubs.md`](docs/testing/002-stubs.md))
 is resolved from the file-based Maven repository committed in `libs/`. Do not
 `includeBuild` a sibling `stub-call` checkout: the committed repository keeps builds
 independent from files outside this project.
