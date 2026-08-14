@@ -1,7 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+        The browser fallback's redirect activity is contributed by AppAuth's own manifest and keyed
+        on the `appAuthRedirectScheme` placeholder, which build.gradle.kts fills from
+        `yap.google.reversedClientId`. Setting that property to the reversed Android client ID is
+        what registers `com.googleusercontent.apps.<id>:/oauth2redirect` as a redirect URI.
+    -->
+
     <application
         android:allowBackup="false"
         android:label="Yap"
-        android:supportsRtl="true" />
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Yap">
+
+        <activity
+            android:name="app.yap.android.MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density|fontScale"
+            android:exported="true"
+            android:theme="@style/Theme.Yap.Starting"
+            android:windowSoftInputMode="adjustResize">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
 </manifest>

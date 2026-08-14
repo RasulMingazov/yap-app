@@ -19,11 +19,18 @@ object AppConfigLoader {
             jwtIssuer = env("JWT_ISSUER") ?: "yap-backend",
             jwtAudience = env("JWT_AUDIENCE") ?: "yap-mobile",
             accessTokenTtlSeconds = longEnv("ACCESS_TOKEN_TTL_SECONDS", default = 900),
-            refreshTokenTtlSeconds = longEnv("REFRESH_TOKEN_TTL_SECONDS", default = 2_592_000),
+            refreshTokenTtlSeconds = longEnv("REFRESH_TOKEN_TTL_SECONDS", default = 7_776_000),
         )
         return AppConfig(
             port = intEnv("PORT", default = 8080),
             trustProxyHeaders = booleanEnv("TRUST_PROXY_HEADERS", default = false),
+            authRateLimitRequestsPerMinute = intEnv(
+                "AUTH_RATE_LIMIT_REQUESTS_PER_MINUTE",
+                default = 100,
+            ),
+            googleAndroidClientId = env("GOOGLE_ANDROID_CLIENT_ID").orEmpty(),
+            googleIosClientId = env("GOOGLE_IOS_CLIENT_ID").orEmpty(),
+            googleWebClientId = env("GOOGLE_WEB_CLIENT_ID").orEmpty(),
             database = database,
             auth = auth,
         )

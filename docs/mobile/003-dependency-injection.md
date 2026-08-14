@@ -1,6 +1,9 @@
 # Dependency Injection
 
-Koin declares each graph node once and resolves it by contract type. The module function is public in `api`; everything it declares is `internal` in `impl`.
+Koin declares each graph node once and resolves it by contract type. The module function is public
+in **`impl`**; everything it declares is `internal` in `impl`. It cannot live in `api`: a function
+there could not bind declarations that are `internal` to `impl`, which is why `app-root` depends on
+both modules — `api` to compose destinations, `impl` to load the module.
 
 ```kotlin
 fun featureProfileModule(): Module = module {
@@ -8,7 +11,7 @@ fun featureProfileModule(): Module = module {
 
     factory<ObserveProfileUseCase> { DefaultObserveProfileUseCase(get()) }
 
-    viewModel { ProfileViewModel(navigator = get(), observeProfileUseCase = get()) }
+    viewModel { ProfileViewModel(observeProfileUseCase = get()) }
 
     navigation<ProfileNavKey.Overview> { ProfileScreen() }
 }
@@ -24,13 +27,22 @@ fun featureProfileModule(): Module = module {
 
 ## Composition root
 
-`app-root` owns the graph: `appModules(baseUrl)` lists every module and `initKoin(baseUrl)` starts Koin. Platform entry points call `initKoin` and add platform-only modules through its `appDeclaration` parameter. No other module starts Koin.
+`app-root` owns the whole common composition root: `appModules(...)` lists every module,
+`initKoin(...)` starts Koin, the root back stack is derived there from application state, and
+`App()` composes destinations with `koinEntryProvider()`. A feature never receives a back stack as
+a parameter. Both functions take the application's configuration as parameters rather than reading
+it from global state, so their signatures grow as features are added. Navigation mechanics follow
+the `navigation-3` skill.
 
-It also owns the single `Navigator` and composes destinations with `koinEntryProvider()`, so a feature never receives a back stack as a parameter. Navigation mechanics follow the `navigation-3` skill.
+`shared-app` holds only the platform entry points and the iOS framework, and deliberately has **no
+`commonMain` sources**: Kotlin/Native exports a framework module's own public declarations into the
+generated Objective-C header, so common code there would widen the Swift surface silently. Platform
+entry points call `initKoin` and add platform-only modules through its `appDeclaration` parameter.
+No other module starts Koin.
 
 ## Scopes
 
-- Application-wide collaborators, including `Navigator`, are root singletons and live for the process.
+- Application-wide collaborators are root singletons and live for the process.
 - Session-bound state that must be dropped on logout belongs to a dedicated module loaded on login and unloaded on logout; do not keep it in a root singleton.
 - An inactive destination must not create view models, subscriptions, or data loads.
 

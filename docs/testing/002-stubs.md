@@ -59,7 +59,9 @@ internal class StubGetUserUseCase(
 }
 ```
 
-- Name the implementation `StubX` and keep it in its own file.
+- Name the implementation `StubX` and keep it in its own file, in the package of the production
+  code that owns the contract — a use-case stub under `domain`, a repository or data-source stub
+  under `data` — not in the package of whichever layer happens to consume it.
 - Expose a `StubCallN` property named after the delegated method, such as `invokeCall` or `loadCall`.
 - Accept the default result in the constructor and build it through the corresponding value stub.
 - Match `N` to the method arity; use `unit()` for `Unit` methods and `returns(...)` for a default result.

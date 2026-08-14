@@ -1,9 +1,5 @@
 package app.yap.server.core.config
 
-/**
- * Generic JWT issuance settings owned by core infrastructure. Identity-provider-specific
- * settings (Google/Apple client IDs) belong to the feature-auth module that consumes them.
- */
 data class AuthConfig(
     val jwtSecret: String,
     val jwtIssuer: String,

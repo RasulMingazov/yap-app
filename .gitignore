@@ -12,6 +12,8 @@ DerivedData/
 *.swp
 .env
 .env.*
+# The template carries no secrets and is what a new clone copies `.env` from.
+!.env.example
 local.properties
 .claude/*
 !.claude/settings.json

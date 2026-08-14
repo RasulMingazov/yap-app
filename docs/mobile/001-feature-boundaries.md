@@ -18,10 +18,12 @@ feature-auth/
 - The feature's `NavKey` hierarchy.
 - Use-case contracts — the interface only, never `Default...UseCase`.
 - Entities and value objects appearing in those signatures.
-- The Koin module function.
+- Ports another module implements or calls, such as a platform credential provider.
 
 Everything else is `impl` and stays `internal`: repository ports and implementations, use-case
-implementations, data sources, mappers, view models, and composables.
+implementations, data sources, mappers, view models, and composables. The feature's Koin module
+function is public in `impl` — see [Dependency Injection](003-dependency-injection.md) for why it
+cannot live in `api`.
 
 ## Layers inside `impl`
 
@@ -60,7 +62,9 @@ feature-auth/impl/src/commonMain/kotlin/app/yap/feature/auth/
 └── di/
 ```
 
-Keep child presentation slices in focused packages such as `presentation/signin`.
+Keep child presentation slices in focused packages such as `presentation/login`. Within a slice, the
+composables that draw and style the screen sit in a nested `ui` package — `presentation/login/ui` —
+beside, not among, the view model and state mapper that feed them. Tests mirror the same split.
 
 ## Implementation order
 

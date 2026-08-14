@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Login screen, top to bottom. All copy is Russian; no other locale is in scope. -->
+    <string name="login_marquee">ВХОД ЗА 1 ТАП ✦ БЕЗ ПАРОЛЕЙ</string>
+    <!-- The break is the design's own: the heading is set as two lines, not wrapped by width. -->
+    <string name="login_hero">БОЛТАЙ\nБЕЗ СТРАХА</string>
+
+    <!-- The rotating topic word, cycled in place beneath the hero heading. -->
+    <string name="login_topic_small_talk">SMALL TALK</string>
+    <string name="login_topic_rejections">ОТКАЗЫ</string>
+    <string name="login_topic_meeting_people">ЗНАКОМСТВА</string>
+
+    <string name="login_body">Короткие диалоги с ИИ-наставником. Заходишь, говоришь минуту, закрываешь.</string>
+    <string name="login_primary_action">ВОЙТИ</string>
+    <string name="login_caption">Аккаунт нужен для стрика и истории занятий.</string>
+
+    <!-- Legal line beneath the primary action. Split so each document is its own link. -->
+    <string name="login_legal_prefix">Продолжая, вы принимаете </string>
+    <string name="login_legal_terms">условия использования</string>
+    <string name="login_legal_separator"> и </string>
+    <string name="login_legal_privacy">политику конфиденциальности</string>
+    <string name="login_legal_suffix">.</string>
+
+    <!-- Provider sheet. -->
+    <string name="login_provider_sheet_title">Способы входа</string>
+    <string name="login_provider_google">Google</string>
+    <string name="login_provider_apple">Apple</string>
+    <string name="login_provider_t_id">T-ID</string>
+
+    <!-- Transient messages. Neither exposes provider or transport detail. -->
+    <string name="login_provider_not_available">Этот способ входа скоро появится</string>
+    <string name="login_failed">Не удалось войти. Попробуйте ещё раз</string>
+
+    <!-- Spoken names for assistive technology. -->
+    <string name="login_primary_action_semantics">Войти в Yap</string>
+    <string name="login_provider_semantics">Войти через %1$s</string>
+    <string name="login_legal_terms_semantics">Открыть условия использования</string>
+    <string name="login_legal_privacy_semantics">Открыть политику конфиденциальности</string>
+</resources>

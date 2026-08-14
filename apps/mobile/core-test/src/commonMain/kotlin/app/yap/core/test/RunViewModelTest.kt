@@ -9,10 +9,6 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 
-/**
- * Runs [body] with the main dispatcher backed by the test scheduler so that
- * `viewModelScope` is deterministic.
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 fun runViewModelTest(body: suspend TestScope.() -> Unit): TestResult = runTest {
     Dispatchers.setMain(StandardTestDispatcher(testScheduler))

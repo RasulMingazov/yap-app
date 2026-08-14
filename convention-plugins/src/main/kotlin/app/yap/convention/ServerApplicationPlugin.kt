@@ -15,7 +15,7 @@ class ServerApplicationPlugin : Plugin<Project> {
         pluginManager.apply(ApplicationPlugin::class.java)
 
         extensions.configure<JavaApplication> {
-            mainClass.set("app.yap.server.MainKt")
+            mainClass.set("app.yap.server.app.ApplicationKt")
         }
 
         dependencies {

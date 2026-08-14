@@ -1,8 +1,18 @@
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
+/**
+ * Platform entry points and the iOS framework — nothing else.
+ *
+ * This module deliberately has **no `commonMain` sources**. Kotlin/Native exports a framework
+ * module's own public declarations into the generated Objective-C header, so common code living
+ * here would widen the Swift surface silently; with none, the header can only carry what the
+ * framework explicitly exports plus the three iOS entry points below. The composition root lives
+ * in `app-root` for that reason.
+ */
 plugins {
     alias(libs.plugins.yap.kmp.library)
     alias(libs.plugins.yap.compose.multiplatform)
+    alias(libs.plugins.yap.koin.compose)
 }
 
 kotlin {
@@ -10,13 +20,21 @@ kotlin {
         binaries.framework {
             baseName = "YapShared"
             isStatic = true
+
+            // Swift implements `GoogleCredentialProvider` in the Xcode host, so the auth api must
+            // be visible from the framework's Objective-C headers.
+            export(project(":apps:mobile:feature-auth:api"))
         }
     }
 
     sourceSets {
         commonMain.dependencies {
+            // `api` for what a platform host touches directly: the credential port Swift
+            // implements, the capability ports the entry points hand back, and Koin's own type.
+            api(project(":apps:mobile:core-common"))
+            api(project(":apps:mobile:feature-auth:api"))
+            api(libs.koin.core)
             implementation(project(":apps:mobile:app-root"))
-            implementation(project(":apps:mobile:core-design"))
         }
     }
 }
