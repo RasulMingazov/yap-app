@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
-import app.yap.core.common.platform.Platform
 import app.yap.core.design.theme.YapTheme
 import app.yap.feature.auth.presentation.login.LoginUiStateMapper
 import app.yap.feature.auth.presentation.login.LoginViewModel
@@ -34,19 +33,13 @@ internal fun LoginScreenTestHost(
 }
 
 internal fun stubLoginUiState(
-    isProviderSheetVisible: Boolean = false,
     isMotionReduced: Boolean = true,
     isLoggingIn: Boolean = false,
-    platform: Platform = Platform.ANDROID,
     privacyUrl: String? = PRIVACY_URL,
     termsUrl: String? = TERMS_URL,
 ): LoginViewModel.UiState = LoginUiStateMapper(
-    dataState = LoginViewModel.DataState(
-        isProviderSheetVisible = isProviderSheetVisible,
-        isLoggingIn = isLoggingIn,
-    ),
+    dataState = LoginViewModel.DataState(isLoggingIn = isLoggingIn),
     isMotionReduced = isMotionReduced,
-    platform = platform,
     privacyUrl = privacyUrl,
     termsUrl = termsUrl,
 )

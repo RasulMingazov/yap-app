@@ -1,29 +1,57 @@
 package app.yap.core.design.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 
-private val DarkColorScheme = darkColorScheme()
+val LocalYapColors = staticCompositionLocalOf { LightYapColors }
 
-private val LightColorScheme = lightColorScheme()
+object YapTheme {
 
-val LocalIsDarkTheme = staticCompositionLocalOf { false }
+    val colors: YapColors
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalYapColors.current
+}
 
 @Composable
 fun YapTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    CompositionLocalProvider(LocalIsDarkTheme provides darkTheme) {
+    val colors = if (darkTheme) DarkYapColors else LightYapColors
+
+    CompositionLocalProvider(LocalYapColors provides colors) {
         MaterialTheme(
-            colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+            colorScheme = colors.toColorScheme(isDark = darkTheme),
             typography = YapTypography,
             content = content,
         )
     }
+}
+
+private fun YapColors.toColorScheme(isDark: Boolean): ColorScheme {
+    val base = if (isDark) darkColorScheme() else lightColorScheme()
+
+    return base.copy(
+        background = background,
+        onBackground = onBackground,
+        surface = surface,
+        onSurface = onSurface,
+        primary = action,
+        onPrimary = onAction,
+        secondary = accent,
+        onSecondary = onAction,
+        inverseSurface = notice,
+        inverseOnSurface = onNotice,
+        outline = outline,
+        outlineVariant = outline,
+        scrim = scrim,
+    )
 }

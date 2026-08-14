@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import app.yap.core.design.theme.YapTheme
 import app.yap.feature.auth.generated.resources.Res
 import app.yap.feature.auth.generated.resources.login_legal_prefix
 import app.yap.feature.auth.generated.resources.login_legal_privacy
@@ -31,7 +32,7 @@ internal fun LegalLine(
     modifier: Modifier = Modifier,
 ) {
     val uriHandler = LocalUriHandler.current
-    val colors = loginColors()
+    val colors = YapTheme.colors
 
     FlowRow(
         horizontalArrangement = Arrangement.Center,
@@ -40,7 +41,7 @@ internal fun LegalLine(
         Text(
             text = stringResource(Res.string.login_legal_prefix),
             style = MaterialTheme.typography.bodySmall,
-            color = colors.muted,
+            color = colors.bodyMuted,
         )
         LegalLink(
             destination = termsUrl,
@@ -52,7 +53,7 @@ internal fun LegalLine(
         Text(
             text = stringResource(Res.string.login_legal_separator),
             style = MaterialTheme.typography.bodySmall,
-            color = colors.muted,
+            color = colors.bodyMuted,
         )
         LegalLink(
             destination = privacyUrl,
@@ -64,7 +65,7 @@ internal fun LegalLine(
         Text(
             text = stringResource(Res.string.login_legal_suffix),
             style = MaterialTheme.typography.bodySmall,
-            color = colors.muted,
+            color = colors.bodyMuted,
         )
     }
 }
@@ -82,7 +83,7 @@ private fun LegalLink(
     Text(
         text = stringResource(labelRes),
         style = MaterialTheme.typography.bodySmall,
-        color = loginColors().link,
+        color = YapTheme.colors.link,
         fontWeight = FontWeight.SemiBold,
         textDecoration = TextDecoration.Underline,
         modifier = Modifier

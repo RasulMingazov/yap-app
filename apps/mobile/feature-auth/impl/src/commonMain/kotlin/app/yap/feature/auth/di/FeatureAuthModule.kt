@@ -1,9 +1,11 @@
 package app.yap.feature.auth.di
 
 import app.yap.core.common.network.AccessTokenProvider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import app.yap.core.design.navigation.bottomSheetScene
 import app.yap.core.network.NetworkClient
 import app.yap.feature.auth.api.AuthNavKey
-import app.yap.feature.auth.api.entity.AuthProvider
+import app.yap.feature.auth.api.usecase.ObserveAuthProvidersUseCase
 import app.yap.feature.auth.api.usecase.ObserveAuthStateUseCase
 import app.yap.feature.auth.api.usecase.LoginUseCase
 import app.yap.feature.auth.api.usecase.RenewSessionUseCase
@@ -18,17 +20,24 @@ import app.yap.feature.auth.data.local.createSessionStorage
 import app.yap.feature.auth.data.remote.AuthRemoteDataSource
 import app.yap.feature.auth.data.remote.DefaultAuthRemoteDataSource
 import app.yap.feature.auth.data.repository.DefaultAuthRepository
+import app.yap.feature.auth.domain.provider.GoogleProviderLogin
+import app.yap.feature.auth.domain.provider.ProviderLogin
 import app.yap.feature.auth.domain.repository.AuthRepository
+import app.yap.feature.auth.domain.usecase.DefaultLoginUseCase
+import app.yap.feature.auth.domain.usecase.DefaultObserveAuthProvidersUseCase
 import app.yap.feature.auth.domain.usecase.DefaultObserveAuthStateUseCase
 import app.yap.feature.auth.domain.usecase.DefaultRenewSessionUseCase
-import app.yap.feature.auth.domain.usecase.GoogleLoginUseCase
 import app.yap.feature.auth.presentation.login.LoginViewModel
 import app.yap.feature.auth.presentation.login.ui.LoginScreen
+import app.yap.feature.auth.presentation.selectprovider.SelectAuthProviderViewModel
+import app.yap.feature.auth.presentation.selectprovider.ui.SelectAuthProviderScreen
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.koin.dsl.navigation3.navigation
 
+@OptIn(ExperimentalMaterial3Api::class)
 fun featureAuthModule(
     googleServerClientId: String,
     privacyUrl: String?,
@@ -82,21 +91,32 @@ fun featureAuthModule(
 
     factory<RenewSessionUseCase> { DefaultRenewSessionUseCase(authRepository = get()) }
 
-    factory<Map<AuthProvider, LoginUseCase>> {
-        mapOf(AuthProvider.GOOGLE to GoogleLoginUseCase(authRepository = get()))
-    }
+    single { GoogleProviderLogin(authRepository = get()) } bind ProviderLogin::class
+
+    factory<LoginUseCase> { DefaultLoginUseCase(providerLogins = getAll<ProviderLogin>()) }
+
+    factory<ObserveAuthProvidersUseCase> { DefaultObserveAuthProvidersUseCase(platform = get()) }
 
     viewModel {
         LoginViewModel(
-            loginUseCases = get(),
+            loginUseCase = get(),
             motionPreferences = get(),
-            platform = get(),
+            navigator = get(),
             privacyUrl = privacyUrl,
             termsUrl = termsUrl,
         )
     }
 
+    viewModel {
+        SelectAuthProviderViewModel(
+            navigator = get(),
+            observeAuthProvidersUseCase = get(),
+        )
+    }
+
     navigation<AuthNavKey.Login> { LoginScreen() }
+
+    navigation<AuthNavKey.SelectAuthProvider>(metadata = bottomSheetScene()) { SelectAuthProviderScreen() }
 }
 
 internal expect fun Module.bindGoogleCredentialProvider(

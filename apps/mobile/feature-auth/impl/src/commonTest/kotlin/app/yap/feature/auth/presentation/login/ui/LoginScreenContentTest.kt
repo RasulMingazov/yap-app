@@ -4,7 +4,6 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import app.yap.feature.auth.presentation.ComposeUiTestCase
@@ -33,16 +32,6 @@ internal class LoginScreenContentTest : ComposeUiTestCase() {
             setContent { LoginScreenTestHost(uiState = stubLoginUiState(isLoggingIn = true)) }
 
             onNodeWithTag(LoginTestTags.PRIMARY_ACTION_PROGRESS).assertIsDisplayed()
-        }
-
-    @Test
-    fun `GIVEN the provider sheet is open WHEN it is shown THEN it is headed and lists every provider`() =
-        runComposeUiTest {
-            setContent { LoginScreenTestHost(uiState = stubLoginUiState(isProviderSheetVisible = true)) }
-
-            onNodeWithText("Способы входа").assertIsDisplayed()
-            onNodeWithText("Google").assertIsDisplayed()
-            onNodeWithText("T-ID").assertIsDisplayed()
         }
 
     @Test

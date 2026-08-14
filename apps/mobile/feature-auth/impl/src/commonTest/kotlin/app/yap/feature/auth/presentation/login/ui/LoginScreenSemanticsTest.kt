@@ -25,12 +25,4 @@ internal class LoginScreenSemanticsTest : ComposeUiTestCase() {
         onNodeWithContentDescription("Открыть условия использования").assertIsDisplayed()
         onNodeWithContentDescription("Открыть политику конфиденциальности").assertIsDisplayed()
     }
-
-    @Test
-    fun `GIVEN the provider sheet WHEN it is read aloud THEN each row names the provider it starts`() = runComposeUiTest {
-        setContent { LoginScreenTestHost(uiState = stubLoginUiState(isProviderSheetVisible = true)) }
-
-        onNodeWithContentDescription("Войти через Google").assertIsDisplayed()
-        onNodeWithContentDescription("Войти через T-ID").assertIsDisplayed()
-    }
 }

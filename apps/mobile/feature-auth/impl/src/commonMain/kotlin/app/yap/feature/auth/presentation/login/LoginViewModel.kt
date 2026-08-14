@@ -1,31 +1,32 @@
 package app.yap.feature.auth.presentation.login
 
+import androidx.lifecycle.viewModelScope
+import app.yap.core.common.navigation.Navigator
 import app.yap.core.common.platform.MotionPreferences
-import app.yap.core.common.platform.Platform
 import app.yap.core.common.presentation.BaseViewModel
+import app.yap.feature.auth.api.AuthNavKey
 import app.yap.feature.auth.api.entity.AuthProvider
 import app.yap.feature.auth.api.entity.LoginOutcome
 import app.yap.feature.auth.api.usecase.LoginUseCase
 import app.yap.feature.auth.generated.resources.Res
-import app.yap.feature.auth.generated.resources.login_provider_not_available
 import app.yap.feature.auth.generated.resources.login_failed
+import app.yap.feature.auth.generated.resources.login_provider_soon
+import app.yap.feature.auth.presentation.AuthProviderResources
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 
 internal class LoginViewModel(
-    private val loginUseCases: Map<AuthProvider, LoginUseCase>,
+    private val loginUseCase: LoginUseCase,
     private val motionPreferences: MotionPreferences,
-    private val platform: Platform,
+    private val navigator: Navigator,
     private val privacyUrl: String?,
     private val termsUrl: String?,
-    private val declarations: List<AuthProviderDeclaration> = AuthProviderCatalog.DECLARATIONS,
 ) : BaseViewModel() {
 
     private val dataState = MutableStateFlow(DataState())
@@ -35,10 +36,8 @@ internal class LoginViewModel(
         LoginUiStateMapper(
             dataState = state,
             isMotionReduced = motionPreferences.isReduced(),
-            platform = platform,
             privacyUrl = privacyUrl,
             termsUrl = termsUrl,
-            declarations = declarations,
         )
     }
 
@@ -46,44 +45,38 @@ internal class LoginViewModel(
 
     fun onEvent(event: Event) = when (event) {
         is Event.ProviderChosen -> onProviderChosen(event.provider)
-        is Event.ProviderSheetDismissed -> onProviderSheetDismissed()
         is Event.PrimaryActionClicked -> onPrimaryActionClicked()
     }
 
     private fun onPrimaryActionClicked() {
         if (dataState.value.isLoggingIn) return
-        dataState.update { state -> state.copy(isProviderSheetVisible = true) }
+        navigator.navigate(AuthNavKey.SelectAuthProvider)
     }
 
     private fun onProviderChosen(provider: AuthProvider) {
         if (dataState.value.isLoggingIn) return
 
-        val loginUseCase = loginPathFor(provider)
-        if (loginUseCase == null) {
-            newsChannel.trySend(News.ShowMessage(Res.string.login_provider_not_available))
-            return
-        }
-
-        dataState.update { state -> state.copy(isProviderSheetVisible = false, isLoggingIn = true) }
+        dataState.update { state -> state.copy(isLoggingIn = true) }
         viewModelScope.launch {
-            val outcome = loginUseCase()
+            val outcome = loginUseCase(provider)
             dataState.update { state -> state.copy(isLoggingIn = false) }
-            onOutcome(outcome)
+            onOutcome(outcome = outcome, provider = provider)
         }
     }
 
-    private fun loginPathFor(provider: AuthProvider): LoginUseCase? = declarations
-        .firstOrNull { declaration -> declaration.provider == provider }
-        ?.takeIf { declaration -> platform in declaration.shownOn && declaration.isUsable }
-        ?.let { loginUseCases[provider] }
-
-    private fun onProviderSheetDismissed() {
-        dataState.update { state -> state.copy(isProviderSheetVisible = false) }
-    }
-
-    private fun onOutcome(outcome: LoginOutcome) = when (outcome) {
+    private fun onOutcome(outcome: LoginOutcome, provider: AuthProvider) = when (outcome) {
         is LoginOutcome.Success -> Unit
         is LoginOutcome.Cancelled -> Unit
+        is LoginOutcome.Unavailable -> {
+            newsChannel.trySend(
+                News.ShowMessage(
+                    message = Res.string.login_provider_soon,
+                    argument = AuthProviderResources.labelOf(provider),
+                ),
+            )
+            Unit
+        }
+
         is LoginOutcome.Failed -> {
             newsChannel.trySend(News.ShowMessage(Res.string.login_failed))
             Unit
@@ -95,38 +88,27 @@ internal class LoginViewModel(
         newsChannel.close()
     }
 
-    data class DataState(
-        val isProviderSheetVisible: Boolean = false,
-        val isLoggingIn: Boolean = false,
-    )
+    data class DataState(val isLoggingIn: Boolean = false)
 
     data class UiState(
-        val isProviderSheetVisible: Boolean,
-        val isMotionReduced: Boolean,
         val isLoggingIn: Boolean,
-        val providers: List<Provider>,
+        val isMotionReduced: Boolean,
         val privacyUrl: String?,
         val termsUrl: String?,
         val topics: List<StringResource>,
-    ) {
-
-        data class Provider(
-            val isAvailable: Boolean,
-            val labelRes: StringResource,
-            val provider: AuthProvider,
-        )
-    }
+    )
 
     sealed interface News {
 
-        data class ShowMessage(val message: StringResource) : News
+        data class ShowMessage(
+            val message: StringResource,
+            val argument: StringResource? = null,
+        ) : News
     }
 
     sealed interface Event {
 
         data class ProviderChosen(val provider: AuthProvider) : Event
-
-        data object ProviderSheetDismissed : Event
 
         data object PrimaryActionClicked : Event
     }

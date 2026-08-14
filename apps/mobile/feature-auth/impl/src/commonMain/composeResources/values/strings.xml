@@ -27,8 +27,7 @@
     <string name="login_provider_apple">Apple</string>
     <string name="login_provider_t_id">T-ID</string>
 
-    <!-- Transient messages. Neither exposes provider or transport detail. -->
-    <string name="login_provider_not_available">Этот способ входа скоро появится</string>
+    <string name="login_provider_soon">Вход через %1$s скоро появится</string>
     <string name="login_failed">Не удалось войти. Попробуйте ещё раз</string>
 
     <!-- Spoken names for assistive technology. -->

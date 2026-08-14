@@ -2,7 +2,6 @@ package app.yap.feature.auth.presentation.login.ui
 
 internal object LoginTestTags {
 
-    const val BANNER = "login_banner"
     const val BODY = "login_body"
     const val CAPTION = "login_caption"
     const val HERO = "login_hero"
@@ -12,5 +11,6 @@ internal object LoginTestTags {
     const val MARQUEE = "login_marquee"
     const val PRIMARY_ACTION = "login_primary_action"
     const val PRIMARY_ACTION_PROGRESS = "login_primary_action_progress"
+    const val SNACKBAR = "login_snackbar"
     const val TOPIC = "login_topic"
 }

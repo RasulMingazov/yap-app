@@ -7,4 +7,6 @@ sealed interface LoginOutcome {
     data object Cancelled : LoginOutcome
 
     data object Failed : LoginOutcome
+
+    data object Unavailable : LoginOutcome
 }

@@ -8,4 +8,7 @@ sealed interface AuthNavKey : NavKey {
 
     @Serializable
     data object Login : AuthNavKey
+
+    @Serializable
+    data object SelectAuthProvider : AuthNavKey
 }

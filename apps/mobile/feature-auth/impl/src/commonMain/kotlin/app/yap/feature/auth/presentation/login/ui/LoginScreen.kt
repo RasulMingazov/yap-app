@@ -33,6 +33,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,6 +55,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.result.ResultEffect
+import app.yap.core.design.theme.YapTheme
+import app.yap.feature.auth.api.entity.AuthProvider
 import app.yap.feature.auth.generated.resources.Res
 import app.yap.feature.auth.generated.resources.login_body
 import app.yap.feature.auth.generated.resources.login_caption
@@ -60,15 +65,16 @@ import app.yap.feature.auth.generated.resources.login_hero
 import app.yap.feature.auth.generated.resources.login_marquee
 import app.yap.feature.auth.generated.resources.login_primary_action
 import app.yap.feature.auth.generated.resources.login_primary_action_semantics
+import app.yap.feature.auth.presentation.AuthResultKeys
 import app.yap.feature.auth.presentation.login.LoginViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-private const val BANNER_MILLIS = 4_000L
 private const val TOPIC_INTERVAL_MILLIS = 2_000L
 private const val TOPIC_ROLL_MILLIS = 420
 private const val MARQUEE_CYCLE_MILLIS = 7_500
@@ -87,6 +93,10 @@ internal fun LoginScreen() {
     val viewModel: LoginViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    ResultEffect<AuthProvider>(resultKey = AuthResultKeys.PROVIDER_SELECTION) { provider ->
+        viewModel.onEvent(LoginViewModel.Event.ProviderChosen(provider))
+    }
+
     LoginScreenContent(uiState = uiState, onEvent = viewModel::onEvent, news = viewModel.news)
 }
 
@@ -96,8 +106,19 @@ internal fun LoginScreenContent(
     onEvent: (LoginViewModel.Event) -> Unit,
     news: Flow<LoginViewModel.News> = emptyFlow(),
 ) {
-    val colors = loginColors()
-    val message = rememberTransientMessage(news)
+    val colors = YapTheme.colors
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(news) {
+        news.collect { item ->
+            when (item) {
+                is LoginViewModel.News.ShowMessage -> snackbarHostState.showSnackbar(
+                        message = item.resolve(),
+                        duration = SnackbarDuration.Indefinite,
+                    )
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -145,7 +166,7 @@ internal fun LoginScreenContent(
                     Text(
                         text = stringResource(Res.string.login_body),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = colors.muted,
+                        color = colors.bodyMuted,
                         modifier = Modifier.testTag(LoginTestTags.BODY),
                     )
                 }
@@ -176,21 +197,10 @@ internal fun LoginScreenContent(
             }
         }
 
-        if (message != null) {
-            TransientBanner(
-                message = message,
-                modifier = Modifier.align(Alignment.TopCenter),
-            )
-        }
-    }
-
-    if (uiState.isProviderSheetVisible) {
-        AuthProviderSheet(
-            providers = uiState.providers,
-            onDismiss = { onEvent(LoginViewModel.Event.ProviderSheetDismissed) },
-            onProviderChosen = { row ->
-                onEvent(LoginViewModel.Event.ProviderChosen(row.provider))
-            },
+        LoginSnackbarHost(
+            hostState = snackbarHostState,
+            isMotionReduced = uiState.isMotionReduced,
+            modifier = Modifier.align(Alignment.TopCenter),
         )
     }
 }
@@ -215,64 +225,13 @@ private fun loginMetrics(width: Dp): LoginMetrics {
     )
 }
 
-@Composable
-private fun rememberTransientMessage(news: Flow<LoginViewModel.News>): StringResource? {
-    var message by remember { mutableStateOf<StringResource?>(null) }
-    var shownAt by remember { mutableIntStateOf(0) }
-
-    LaunchedEffect(news) {
-        news.collect { item ->
-            when (item) {
-                is LoginViewModel.News.ShowMessage -> {
-                    message = item.message
-                    shownAt += 1
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(shownAt) {
-        if (shownAt == 0) return@LaunchedEffect
-        delay(BANNER_MILLIS)
-        message = null
-    }
-
-    return message
-}
-
-@Composable
-private fun TransientBanner(
-    message: StringResource,
-    modifier: Modifier = Modifier,
-) {
-    val colors = loginColors()
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .safeDrawingPadding()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .testTag(LoginTestTags.BANNER),
-    ) {
-        Text(
-            text = stringResource(message),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onBanner,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(color = colors.bannerBackground, shape = MaterialTheme.shapes.medium)
-                .padding(horizontal = 18.dp, vertical = 12.dp),
-        )
-    }
-}
 
 @Composable
 private fun MarqueeBand(
     isMotionReduced: Boolean,
     bandWidth: Dp,
 ) {
-    val colors = loginColors()
+    val colors = YapTheme.colors
 
     Box(
         contentAlignment = Alignment.Center,
@@ -287,7 +246,7 @@ private fun MarqueeBand(
             modifier = Modifier
                 .requiredWidth(bandWidth)
                 .graphicsLayer { rotationZ = MARQUEE_TILT_DEGREES }
-                .background(colors.marqueeBackground)
+                .background(colors.highlight)
                 .clipToBounds()
                 .padding(vertical = 7.dp),
         ) {
@@ -322,7 +281,7 @@ private fun MarqueeText(offsetFraction: Float) {
     Text(
         text = List(MARQUEE_REPETITIONS) { text }.joinToString(separator = "   ✦   "),
         style = MaterialTheme.typography.labelMedium,
-        color = loginColors().onMarquee,
+        color = YapTheme.colors.onHighlight,
         maxLines = 1,
         softWrap = false,
         modifier = Modifier
@@ -382,7 +341,7 @@ private fun TopicWord(
     Text(
         text = stringResource(topic),
         style = style,
-        color = loginColors().accent,
+        color = YapTheme.colors.accent,
         maxLines = 1,
     )
 }
@@ -392,14 +351,14 @@ private fun PrimaryAction(
     isLoggingIn: Boolean,
     onClick: () -> Unit,
 ) {
-    val colors = loginColors()
+    val colors = YapTheme.colors
     val spokenName = stringResource(Res.string.login_primary_action_semantics)
 
     Button(
         onClick = onClick,
         shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = colors.actionBackground,
+            containerColor = colors.action,
             contentColor = colors.onAction,
         ),
         modifier = Modifier
@@ -423,4 +382,9 @@ private fun PrimaryAction(
             )
         }
     }
+}
+
+private suspend fun LoginViewModel.News.ShowMessage.resolve(): String = when (argument) {
+    null -> getString(message)
+    else -> getString(message, getString(argument))
 }

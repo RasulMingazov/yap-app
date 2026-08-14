@@ -25,7 +25,8 @@ kotlinSerialization = "1.11.0"
 ktor = "3.5.0"
 lifecycle = "2.11.0"
 minSdk = "24"
-navigation3 = "1.1.1"
+navigation3Runtime = "1.2.0-alpha04"
+navigation3Ui = "1.2.0-alpha02"
 postgresql = "42.7.7"
 robolectric = "4.16.1"
 slf4j = "2.0.16"
@@ -92,8 +93,8 @@ ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", ver
 lifecycle-runtime-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
 lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "lifecycle" }
 lifecycle-viewmodel-navigation3 = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
-navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3" }
-navigation3-ui = { group = "org.jetbrains.androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3" }
+navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3Runtime" }
+navigation3-ui = { group = "org.jetbrains.androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3Ui" }
 gradle-plugin-android-tools = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 gradle-plugin-compose = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "composeMultiplatform" }
 gradle-plugin-detekt = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }

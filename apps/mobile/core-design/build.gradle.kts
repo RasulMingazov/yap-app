@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.yap.kmp.library)
     alias(libs.plugins.yap.compose.multiplatform)
+    alias(libs.plugins.yap.navigation3)
 }
 
 kotlin {
