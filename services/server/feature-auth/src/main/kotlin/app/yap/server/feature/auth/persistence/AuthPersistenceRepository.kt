@@ -5,7 +5,9 @@ import java.sql.SQLException
 import java.time.Instant
 import java.util.UUID
 import org.jetbrains.exposed.exceptions.ExposedSQLException
+import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
@@ -19,9 +21,7 @@ private const val UNIQUE_VIOLATION_SQL_STATE = "23505"
 internal class AuthPersistenceRepository : AuthPersistence {
 
     override fun createSession(session: PersistedSession) {
-        transaction {
-            maxAttempts = 1
-
+        withoutRetry {
             SessionsTable.deleteWhere { userId eq UUID.fromString(session.userId) }
             SessionsTable.insert { row ->
                 row[id] = UUID.fromString(session.sessionId)
@@ -33,9 +33,14 @@ internal class AuthPersistenceRepository : AuthPersistence {
         }
     }
 
-    override fun rotateSession(rotation: SessionRotation): String? = transaction {
-        maxAttempts = 1
+    override fun resolveOrCreateUserId(identity: GoogleIdentity): String = try {
+        resolveOrCreate(identity)
+    } catch (error: ExposedSQLException) {
+        if (!error.isUniqueViolation()) throw error
+        resolveWinner(identity) ?: throw error
+    }
 
+    override fun rotateSession(rotation: SessionRotation): String? = withoutRetry {
         val sessionId = UUID.fromString(rotation.sessionId)
         val rotatedRows = SessionsTable.update(
             where = {
@@ -61,16 +66,7 @@ internal class AuthPersistenceRepository : AuthPersistence {
         }
     }
 
-    override fun resolveOrCreateUserId(identity: GoogleIdentity): String = try {
-        resolveOrCreate(identity)
-    } catch (error: ExposedSQLException) {
-        if (!error.isUniqueViolation()) throw error
-        resolveWinner(identity) ?: throw error
-    }
-
-    private fun resolveOrCreate(identity: GoogleIdentity): String = transaction {
-        maxAttempts = 1
-
+    private fun resolveOrCreate(identity: GoogleIdentity): String = withoutRetry {
         val existingUserId = findUserId(identity.subject)
         if (existingUserId == null) {
             createUser(identity)
@@ -79,23 +75,6 @@ internal class AuthPersistenceRepository : AuthPersistence {
             existingUserId
         }
     }
-
-    private fun resolveWinner(identity: GoogleIdentity): String? = transaction {
-        maxAttempts = 1
-        findUserId(identity.subject)?.also { refreshDescriptiveColumns(identity) }
-    }
-
-    private fun findUserId(subject: String): String? = ProviderIdentitiesTable
-        .selectAll()
-        .where {
-            (ProviderIdentitiesTable.provider eq GOOGLE_PROVIDER) and
-                (ProviderIdentitiesTable.providerUserId eq subject)
-        }
-        .limit(1)
-        .firstOrNull()
-        ?.get(ProviderIdentitiesTable.userId)
-        ?.value
-        ?.toString()
 
     private fun createUser(identity: GoogleIdentity): String {
         val createdAtInstant = Instant.now()
@@ -118,20 +97,37 @@ internal class AuthPersistenceRepository : AuthPersistence {
         return newUserId.toString()
     }
 
+    private fun resolveWinner(identity: GoogleIdentity): String? = withoutRetry {
+        findUserId(identity.subject)?.also { refreshDescriptiveColumns(identity) }
+    }
+
+    private fun findUserId(subject: String): String? = ProviderIdentitiesTable
+        .selectAll()
+        .where { googleIdentityOf(subject) }
+        .limit(1)
+        .firstOrNull()
+        ?.get(ProviderIdentitiesTable.userId)
+        ?.value
+        ?.toString()
+
     private fun refreshDescriptiveColumns(identity: GoogleIdentity) {
-        ProviderIdentitiesTable.update(
-            where = {
-                (ProviderIdentitiesTable.provider eq GOOGLE_PROVIDER) and
-                    (ProviderIdentitiesTable.providerUserId eq identity.subject)
-            },
-        ) { row ->
+        ProviderIdentitiesTable.update(where = { googleIdentityOf(identity.subject) }) { row ->
             row[email] = identity.email
             row[displayName] = identity.displayName
             row[avatarUrl] = identity.avatarUrl
         }
     }
 
+    private fun googleIdentityOf(subject: String): Op<Boolean> =
+        (ProviderIdentitiesTable.provider eq GOOGLE_PROVIDER) and
+            (ProviderIdentitiesTable.providerUserId eq subject)
+
     private fun Throwable.isUniqueViolation(): Boolean = generateSequence(this, Throwable::cause)
         .filterIsInstance<SQLException>()
         .any { sqlException -> sqlException.sqlState == UNIQUE_VIOLATION_SQL_STATE }
+
+    private fun <T> withoutRetry(statement: Transaction.() -> T): T = transaction {
+        maxAttempts = 1
+        statement()
+    }
 }

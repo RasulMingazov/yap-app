@@ -1,6 +1,6 @@
 package app.yap.server.feature.auth.model
 
-data class AuthenticatedSession(
+internal data class AuthenticatedSession(
     val userId: String,
     val accessToken: String,
     val refreshToken: String,

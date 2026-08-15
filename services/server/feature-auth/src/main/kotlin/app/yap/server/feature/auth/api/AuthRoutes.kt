@@ -5,6 +5,7 @@ import app.yap.contract.auth.GoogleCredentialsDto
 import app.yap.contract.auth.RefreshCredentialsDto
 import app.yap.server.feature.auth.AuthService
 import app.yap.server.feature.auth.model.AuthFailure
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -42,7 +43,7 @@ internal fun Route.authRoutes(authService: AuthService) {
 }
 
 @Suppress("TooGenericExceptionCaught")
-private suspend inline fun <reified T : Any> io.ktor.server.application.ApplicationCall.receiveOrMalformed(): T =
+private suspend inline fun <reified T : Any> ApplicationCall.receiveOrMalformed(): T =
     try {
         receive<T>()
     } catch (cancellation: CancellationException) {

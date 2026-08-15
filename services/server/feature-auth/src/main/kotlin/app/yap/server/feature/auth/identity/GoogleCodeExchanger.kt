@@ -40,13 +40,6 @@ internal class GoogleCodeExchanger(
         return googleIdentityVerifier.verify(idToken = idToken, expectedNonce = null)
     }
 
-    private fun HttpStatusCode.toFailure(): AuthFailure =
-        if (this == HttpStatusCode.BadRequest || this == HttpStatusCode.Unauthorized) {
-            AuthFailure.UnverifiableConfirmation("Authorization code was refused")
-        } else {
-            AuthFailure.ProviderUnavailable("Token endpoint answered $value")
-        }
-
     @Suppress("TooGenericExceptionCaught")
     private suspend fun post(
         code: String,
@@ -68,6 +61,13 @@ internal class GoogleCodeExchanger(
     } catch (_: Throwable) {
         throw AuthFailure.ProviderUnavailable("Token endpoint unreachable")
     }
+
+    private fun HttpStatusCode.toFailure(): AuthFailure =
+        if (this == HttpStatusCode.BadRequest || this == HttpStatusCode.Unauthorized) {
+            AuthFailure.UnverifiableConfirmation("Authorization code was refused")
+        } else {
+            AuthFailure.ProviderUnavailable("Token endpoint answered $value")
+        }
 }
 
 @Serializable

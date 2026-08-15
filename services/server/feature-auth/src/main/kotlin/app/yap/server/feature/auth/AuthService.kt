@@ -1,6 +1,7 @@
 package app.yap.server.feature.auth
 
 import app.yap.server.core.security.InvalidTokenException
+import app.yap.server.core.security.RefreshToken
 import app.yap.server.core.security.SessionIdentity
 import app.yap.server.core.security.TokenService
 import app.yap.server.feature.auth.identity.GoogleCodeExchanger
@@ -49,7 +50,7 @@ internal class AuthService(
         }
 
         val rotated = tokenService.rotateRefreshToken(presented)
-        val expiresAt = Instant.now(clock).plusSeconds(refreshTokenTtlSeconds)
+        val expiresAt = refreshTokenExpiry()
         val userId = authPersistence.rotateSession(
             SessionRotation(
                 sessionId = presented.sessionId,
@@ -59,33 +60,33 @@ internal class AuthService(
             ),
         ) ?: throw AuthFailure.UnverifiableConfirmation()
 
-        val issued = tokenService.issueTokens(
-            session = SessionIdentity(userId = userId, sessionId = presented.sessionId),
-            refreshToken = rotated,
-        )
-        return AuthenticatedSession(
-            userId = userId,
-            accessToken = issued.accessToken,
-            refreshToken = issued.refreshToken,
-            accessTokenExpiresAtEpochSeconds = issued.accessTokenExpiresAtEpochSeconds,
-            refreshTokenExpiresAtEpochSeconds = expiresAt.epochSecond,
-        )
+        return issueSession(refreshToken = rotated, refreshTokenExpiresAt = expiresAt, userId = userId)
     }
 
     private fun establishSession(identity: GoogleIdentity): AuthenticatedSession {
         val userId = authPersistence.resolveOrCreateUserId(identity)
         val refreshToken = tokenService.createRefreshToken()
-        val refreshTokenExpiresAt = Instant.now(clock).plusSeconds(refreshTokenTtlSeconds)
+        val expiresAt = refreshTokenExpiry()
 
         authPersistence.createSession(
             PersistedSession(
                 sessionId = refreshToken.sessionId,
                 userId = userId,
                 refreshTokenHash = tokenService.hash(refreshToken.value),
-                expiresAt = refreshTokenExpiresAt,
+                expiresAt = expiresAt,
             ),
         )
 
+        return issueSession(refreshToken = refreshToken, refreshTokenExpiresAt = expiresAt, userId = userId)
+    }
+
+    private fun refreshTokenExpiry(): Instant = Instant.now(clock).plusSeconds(refreshTokenTtlSeconds)
+
+    private fun issueSession(
+        refreshToken: RefreshToken,
+        refreshTokenExpiresAt: Instant,
+        userId: String,
+    ): AuthenticatedSession {
         val issued = tokenService.issueTokens(
             session = SessionIdentity(userId = userId, sessionId = refreshToken.sessionId),
             refreshToken = refreshToken,
