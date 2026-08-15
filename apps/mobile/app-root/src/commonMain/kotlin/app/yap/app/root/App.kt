@@ -16,15 +16,17 @@ import app.yap.core.design.navigation.BottomSheetSceneStrategy
 import app.yap.core.design.theme.YapTheme
 import org.koin.compose.koinInject
 import org.koin.compose.navigation3.koinEntryProvider
+import org.koin.core.annotation.KoinExperimentalAPI
 
+@OptIn(KoinExperimentalAPI::class)
 @Composable
 fun App() {
     YapTheme {
         val rootBackStack = koinInject<RootBackStack>()
         val keys by rootBackStack.keys.collectAsStateWithLifecycle(initialValue = emptyList())
 
-        val launchRenewal = koinInject<LaunchRenewal>()
-        LaunchedEffect(launchRenewal) { launchRenewal.run() }
+        val launchSessionRefresh = koinInject<LaunchSessionRefresh>()
+        LaunchedEffect(launchSessionRefresh) { launchSessionRefresh.run() }
 
         val saveableState = rememberSaveableStateHolderNavEntryDecorator<NavKey>()
         val viewModelStore = rememberViewModelStoreNavEntryDecorator<NavKey>()
@@ -42,7 +44,7 @@ fun App() {
                 onBack = rootBackStack::back,
                 entryDecorators = entryDecorators,
                 sceneStrategies = sceneStrategies,
-                entryProvider = koinEntryProvider<NavKey>(),
+                entryProvider = koinEntryProvider(),
             )
         }
     }

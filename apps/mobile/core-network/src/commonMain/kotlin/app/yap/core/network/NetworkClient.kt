@@ -7,9 +7,6 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
-private const val REQUEST_TIMEOUT_MILLIS = 15_000L
-private const val CONNECT_TIMEOUT_MILLIS = 10_000L
-
 class NetworkClient internal constructor(
     val baseUrl: String,
     val httpClient: HttpClient,
@@ -20,18 +17,26 @@ class NetworkClient internal constructor(
     }
 }
 
+data class NetworkTimeouts(
+    val requestMillis: Long = 15_000L,
+    val connectMillis: Long = 10_000L,
+)
+
 internal expect fun platformHttpClientEngine(): HttpClientEngine
 
-internal fun createNetworkClient(
+fun createNetworkClient(
     baseUrl: String,
     engine: HttpClientEngine,
+    timeouts: NetworkTimeouts? = NetworkTimeouts(),
 ): NetworkClient {
     val httpClient = HttpClient(engine) {
         expectSuccess = false
-        install(HttpTimeout) {
-            requestTimeoutMillis = REQUEST_TIMEOUT_MILLIS
-            connectTimeoutMillis = CONNECT_TIMEOUT_MILLIS
-            socketTimeoutMillis = REQUEST_TIMEOUT_MILLIS
+        if (timeouts != null) {
+            install(HttpTimeout) {
+                requestTimeoutMillis = timeouts.requestMillis
+                connectTimeoutMillis = timeouts.connectMillis
+                socketTimeoutMillis = timeouts.requestMillis
+            }
         }
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true; explicitNulls = false })

@@ -29,6 +29,10 @@ class KmpLibraryPlugin : Plugin<Project> {
                     jvmTarget.set(JvmTarget.JVM_17)
                 }
             }
+
+            sourceSets.matching { sourceSet -> sourceSet.name.endsWith("Test") }.configureEach {
+                languageSettings.optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
+            }
         }
 
         commonTestDependencies {

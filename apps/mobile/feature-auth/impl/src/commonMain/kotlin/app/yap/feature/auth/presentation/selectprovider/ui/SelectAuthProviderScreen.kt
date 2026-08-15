@@ -33,7 +33,7 @@ import app.yap.feature.auth.api.entity.AuthProvider
 import app.yap.feature.auth.generated.resources.Res
 import app.yap.feature.auth.generated.resources.login_provider_semantics
 import app.yap.feature.auth.generated.resources.login_provider_sheet_title
-import app.yap.feature.auth.presentation.AuthResultKeys
+import app.yap.feature.auth.presentation.common.AuthResultKeys
 import app.yap.feature.auth.presentation.selectprovider.SelectAuthProviderViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -104,7 +104,7 @@ private fun AuthProviderRow(
     onClick: () -> Unit,
 ) {
     val colors = YapTheme.colors
-    val name = stringResource(provider.labelRes)
+    val name = stringResource(provider.ui.labelRes)
     val spokenName = stringResource(Res.string.login_provider_semantics, name)
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -116,7 +116,7 @@ private fun AuthProviderRow(
         interactionSource = interactionSource,
         modifier = Modifier
             .fillMaxWidth()
-            .testTag(SelectAuthProviderTestTags.rowOf(provider.provider))
+            .testTag(provider.ui.testTag)
             .semantics { contentDescription = spokenName },
     ) {
         Row(
@@ -127,9 +127,9 @@ private fun AuthProviderRow(
                 .padding(horizontal = RowSidePadding),
         ) {
             Icon(
-                painter = painterResource(provider.iconRes),
+                painter = painterResource(provider.ui.iconRes),
                 contentDescription = null,
-                tint = if (provider.isMonochrome) LocalContentColor.current else Color.Unspecified,
+                tint = if (provider.ui.isMonochrome) LocalContentColor.current else Color.Unspecified,
             )
             Text(
                 text = name,

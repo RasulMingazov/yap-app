@@ -13,10 +13,10 @@ internal class DefaultLoginUseCase(
     providerLogins: List<ProviderLogin>,
 ) : LoginUseCase {
 
-    private val loginsByProvider = providerLogins.associateBy(ProviderLogin::provider)
+    private val loginsByType = providerLogins.associateBy(ProviderLogin::type)
 
     override suspend fun invoke(provider: AuthProvider): LoginOutcome {
-        val providerLogin = loginsByProvider[provider::class]
+        val providerLogin = loginsByType[provider.type]
             ?.takeIf { provider.isEnabled }
             ?: return LoginOutcome.Unavailable
 

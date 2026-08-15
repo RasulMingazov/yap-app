@@ -1,6 +1,6 @@
 package app.yap.feature.auth.data.mapper
 
-import app.yap.feature.auth.api.entity.AuthState
+import app.yap.feature.auth.api.entity.AuthSessionState
 import app.yap.feature.auth.api.entity.UserId
 import app.yap.feature.auth.data.local.SessionLocal
 import app.yap.feature.auth.data.local.StubSession
@@ -52,7 +52,7 @@ internal class SessionMapperTest {
         val stored = StubSession.stubSessionLocal()
 
         assertEquals(
-            expected = AuthState.LoggedIn(userId = UserId(StubSession.USER_ID)),
+            expected = AuthSessionState.LoggedIn(userId = UserId(StubSession.USER_ID)),
             actual = stored.toDomain(),
         )
     }
@@ -61,6 +61,6 @@ internal class SessionMapperTest {
     fun `GIVEN a token naming no account WHEN it becomes domain state THEN it counts as no session`() {
         val stored = StubSession.stubSessionLocal(accessToken = StubSession.ACCESS_TOKEN_WITHOUT_SUBJECT)
 
-        assertEquals(expected = AuthState.LoggedOut, actual = stored.toDomain())
+        assertEquals(expected = AuthSessionState.LoggedOut, actual = stored.toDomain())
     }
 }

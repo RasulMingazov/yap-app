@@ -6,12 +6,9 @@ import app.yap.core.common.platform.MotionPreferences
 import app.yap.core.common.presentation.BaseViewModel
 import app.yap.feature.auth.api.AuthNavKey
 import app.yap.feature.auth.api.entity.AuthProvider
-import app.yap.feature.auth.api.entity.LoginOutcome
+import app.yap.feature.auth.api.entity.LegalLinks
+import app.yap.feature.auth.api.usecase.GetLegalLinksUseCase
 import app.yap.feature.auth.api.usecase.LoginUseCase
-import app.yap.feature.auth.generated.resources.Res
-import app.yap.feature.auth.generated.resources.login_failed
-import app.yap.feature.auth.generated.resources.login_provider_soon
-import app.yap.feature.auth.presentation.AuthProviderResources
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,26 +19,31 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 
 internal class LoginViewModel(
+    private val getLegalLinksUseCase: GetLegalLinksUseCase,
     private val loginUseCase: LoginUseCase,
     private val motionPreferences: MotionPreferences,
     private val navigator: Navigator,
-    private val privacyUrl: String?,
-    private val termsUrl: String?,
+    private val newsMapper: LoginNewsMapper,
+    private val uiStateMapper: LoginUiStateMapper,
 ) : BaseViewModel() {
 
     private val dataState = MutableStateFlow(DataState())
-    private val newsChannel = Channel<News>(Channel.BUFFERED)
-
     val uiState: StateFlow<UiState> = dataState.mapState { state ->
-        LoginUiStateMapper(
+        uiStateMapper(
             dataState = state,
-            isMotionReduced = motionPreferences.isReduced(),
-            privacyUrl = privacyUrl,
-            termsUrl = termsUrl,
+            isMotionReduced = motionPreferences.isReduced()
         )
     }
 
+    private val newsChannel = Channel<News>(Channel.BUFFERED)
     val news: Flow<News> = newsChannel.receiveAsFlow()
+
+    init {
+        viewModelScope.launch {
+            val legalLinks = getLegalLinksUseCase()
+            dataState.update { state -> state.copy(legalLinks = legalLinks) }
+        }
+    }
 
     fun onEvent(event: Event) = when (event) {
         is Event.ProviderChosen -> onProviderChosen(event.provider)
@@ -60,26 +62,7 @@ internal class LoginViewModel(
         viewModelScope.launch {
             val outcome = loginUseCase(provider)
             dataState.update { state -> state.copy(isLoggingIn = false) }
-            onOutcome(outcome = outcome, provider = provider)
-        }
-    }
-
-    private fun onOutcome(outcome: LoginOutcome, provider: AuthProvider) = when (outcome) {
-        is LoginOutcome.Success -> Unit
-        is LoginOutcome.Cancelled -> Unit
-        is LoginOutcome.Unavailable -> {
-            newsChannel.trySend(
-                News.ShowMessage(
-                    message = Res.string.login_provider_soon,
-                    argument = AuthProviderResources.labelOf(provider),
-                ),
-            )
-            Unit
-        }
-
-        is LoginOutcome.Failed -> {
-            newsChannel.trySend(News.ShowMessage(Res.string.login_failed))
-            Unit
+            newsMapper(outcome = outcome, provider = provider)?.let(newsChannel::trySend)
         }
     }
 
@@ -88,7 +71,10 @@ internal class LoginViewModel(
         newsChannel.close()
     }
 
-    data class DataState(val isLoggingIn: Boolean = false)
+    data class DataState(
+        val isLoggingIn: Boolean = false,
+        val legalLinks: LegalLinks = LegalLinks(privacyUrl = null, termsUrl = null),
+    )
 
     data class UiState(
         val isLoggingIn: Boolean,

@@ -2,22 +2,22 @@ package app.yap.feature.auth.data
 
 import app.yap.contract.auth.RefreshCredentialsDto
 import app.yap.contract.auth.SessionDto
-import app.yap.feature.auth.api.entity.AuthState
+import app.yap.core.network.ApiClient
+import app.yap.core.network.ApiError
+import app.yap.core.network.ApiResult
+import app.yap.core.network.createNetworkClient
+import app.yap.feature.auth.api.entity.AuthSessionState
 import app.yap.feature.auth.api.entity.UserId
 import app.yap.feature.auth.data.local.SessionLocal
 import app.yap.feature.auth.data.local.StubSession
 import app.yap.feature.auth.data.local.StubSessionStorage
 import app.yap.feature.auth.data.remote.AuthRemoteDataSource
-import app.yap.feature.auth.data.remote.AuthRemoteFailure
 import app.yap.feature.auth.data.remote.DefaultAuthRemoteDataSource
 import app.yap.feature.auth.data.remote.StubAuthRemoteDataSource
 import app.yap.feature.auth.data.remote.StubSessionDto
-import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -64,8 +64,8 @@ internal class DefaultAccessTokenProviderTest {
             ),
         )
         assertEquals(
-            expected = AuthState.LoggedIn(UserId(StubSession.USER_ID)),
-            actual = env.authStateSource.authState.value,
+            expected = AuthSessionState.LoggedIn(UserId(StubSession.USER_ID)),
+            actual = env.sessionStore.sessionState.value,
         )
     }
 
@@ -73,42 +73,47 @@ internal class DefaultAccessTokenProviderTest {
     fun `GIVEN the server refuses the session WHEN a rotation runs THEN storage is cleared and logged out follows`() =
         runTest {
             val env = Environment(storedSession = StubSession.stubSessionLocal())
-            env.remoteDataSource.refreshCall.throws(AuthRemoteFailure.Rejected())
+            env.remoteDataSource.refreshCall.returns(ApiResult.Failure(ApiError.Rejected(code = null)))
 
             val token = env.provider.getAccessToken(rejectedAccessToken = StubSession.ACCESS_TOKEN)
 
             assertNull(actual = token)
             env.sessionStorage.clearCall.called(times = 1)
-            assertEquals(expected = AuthState.LoggedOut, actual = env.authStateSource.authState.value)
+            assertEquals(
+                expected = AuthSessionState.LoggedOut,
+                actual = env.sessionStore.sessionState.value,
+            )
         }
 
     @Test
     fun `GIVEN the server gives no answer WHEN a rotation runs THEN the stored session survives`() = runTest {
         val env = Environment(storedSession = StubSession.stubSessionLocal())
-        env.remoteDataSource.refreshCall.throws(AuthRemoteFailure.Unavailable())
+        env.remoteDataSource.refreshCall.returns(ApiResult.Failure(ApiError.Unavailable))
 
         val token = env.provider.getAccessToken(rejectedAccessToken = StubSession.ACCESS_TOKEN)
 
         assertNull(actual = token)
         env.sessionStorage.clearCall.notCalled()
-        assertEquals(expected = AuthState.Unknown, actual = env.authStateSource.authState.value)
+        assertEquals(expected = AuthSessionState.Unknown, actual = env.sessionStore.sessionState.value)
     }
 
     @Test
     fun `GIVEN the caller is rate limited WHEN a rotation runs THEN the user stays logged in`() = runTest {
         val sessionStorage = StubSessionStorage(session = StubSession.stubSessionLocal())
-        val authStateSource = AuthStateSource()
+        val sessionStore = SessionStore(
+            currentTime = CurrentTime { StubSession.NOW_EPOCH_SECONDS },
+            sessionStorage = sessionStorage,
+        )
         val provider = DefaultAccessTokenProvider(
             authRemoteDataSource = lazy { rateLimitedDataSource() },
-            authStateSource = authStateSource,
-            sessionStorage = sessionStorage,
+            sessionStore = sessionStore,
         )
 
         val token = provider.getAccessToken(rejectedAccessToken = StubSession.ACCESS_TOKEN)
 
         assertNull(actual = token)
         sessionStorage.clearCall.notCalled()
-        assertEquals(expected = AuthState.Unknown, actual = authStateSource.authState.value)
+        assertEquals(expected = AuthSessionState.Unknown, actual = sessionStore.sessionState.value)
     }
 
     @Test
@@ -144,13 +149,13 @@ internal class DefaultAccessTokenProviderTest {
     }
 
     private fun rateLimitedDataSource(): AuthRemoteDataSource = DefaultAuthRemoteDataSource(
-        baseUrl = "https://yap.test",
-        httpClient = HttpClient(
-            MockEngine { respond(content = "", status = HttpStatusCode.TooManyRequests) },
-        ) {
-            expectSuccess = false
-            install(ContentNegotiation) { json() }
-        },
+        apiClient = ApiClient(
+            createNetworkClient(
+                baseUrl = "https://yap.test",
+                engine = MockEngine { respond(content = "", status = HttpStatusCode.TooManyRequests) },
+                timeouts = null,
+            ),
+        ),
     )
 
     private class GatedAuthRemoteDataSource(
@@ -158,7 +163,7 @@ internal class DefaultAccessTokenProviderTest {
         private val gate: CompletableDeferred<Unit>,
     ) : AuthRemoteDataSource by delegate {
 
-        override suspend fun refresh(credentials: RefreshCredentialsDto): SessionDto {
+        override suspend fun refresh(credentials: RefreshCredentialsDto): ApiResult<SessionDto> {
             gate.await()
             return delegate.refresh(credentials)
         }
@@ -169,13 +174,18 @@ internal class DefaultAccessTokenProviderTest {
         isRotationGated: Boolean = false,
     ) {
 
-        val authStateSource = AuthStateSource()
         val sessionStorage = StubSessionStorage(session = storedSession)
+        val sessionStore = SessionStore(
+            currentTime = CurrentTime { StubSession.NOW_EPOCH_SECONDS },
+            sessionStorage = sessionStorage,
+        )
         val remoteDataSource = StubAuthRemoteDataSource().apply {
             refreshCall.returns(
-                StubSessionDto.stubSessionDto(
-                    accessToken = StubSession.ROTATED_ACCESS_TOKEN,
-                    refreshToken = StubSession.ROTATED_REFRESH_TOKEN,
+                ApiResult.Success(
+                    StubSessionDto.stubSessionDto(
+                        accessToken = StubSession.ROTATED_ACCESS_TOKEN,
+                        refreshToken = StubSession.ROTATED_REFRESH_TOKEN,
+                    ),
                 ),
             )
         }
@@ -190,8 +200,7 @@ internal class DefaultAccessTokenProviderTest {
                     remoteDataSource
                 }
             },
-            authStateSource = authStateSource,
-            sessionStorage = sessionStorage,
+            sessionStore = sessionStore,
         )
 
         fun releaseRotation() = gate.complete(Unit)

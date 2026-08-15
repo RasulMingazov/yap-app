@@ -9,7 +9,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import app.yap.core.design.theme.YapTheme
 import app.yap.feature.auth.api.entity.AuthProvider
+import app.yap.feature.auth.api.entity.AuthProviderType
 import app.yap.feature.auth.presentation.ComposeUiTestCase
+import app.yap.feature.auth.presentation.common.AuthProviderUiMapper
 import app.yap.feature.auth.presentation.selectprovider.SelectAuthProviderUiStateMapper
 import app.yap.feature.auth.presentation.selectprovider.SelectAuthProviderViewModel
 import kotlin.test.Test
@@ -17,6 +19,8 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalTestApi::class)
 internal class SelectAuthProviderScreenTest : ComposeUiTestCase() {
+
+    private val authProviderUiMapper = AuthProviderUiMapper()
 
     @Test
     fun `GIVEN the roster WHEN the screen is shown THEN it is headed and names every provider`() = runComposeUiTest {
@@ -41,7 +45,7 @@ internal class SelectAuthProviderScreenTest : ComposeUiTestCase() {
             val chosen = mutableListOf<AuthProvider>()
             setContent { TestHost(uiState = stubUiState(), onProviderChosen = { provider -> chosen += provider }) }
 
-            onNodeWithTag(SelectAuthProviderTestTags.rowOf(T_ID)).performClick()
+            onNodeWithTag(authProviderUiMapper(T_ID.type).testTag).performClick()
 
             assertEquals(expected = listOf(T_ID), actual = chosen)
         }
@@ -51,7 +55,7 @@ internal class SelectAuthProviderScreenTest : ComposeUiTestCase() {
         val chosen = mutableListOf<AuthProvider>()
         setContent { TestHost(uiState = stubUiState(), onProviderChosen = { provider -> chosen += provider }) }
 
-        onNodeWithTag(SelectAuthProviderTestTags.rowOf(GOOGLE)).performClick()
+        onNodeWithTag(authProviderUiMapper(GOOGLE.type).testTag).performClick()
 
         assertEquals(expected = listOf(GOOGLE), actual = chosen)
     }
@@ -66,13 +70,14 @@ internal class SelectAuthProviderScreenTest : ComposeUiTestCase() {
         }
     }
 
-    private fun stubUiState(): SelectAuthProviderViewModel.UiState = SelectAuthProviderUiStateMapper(
-        SelectAuthProviderViewModel.DataState(providers = listOf(GOOGLE, APPLE, T_ID)),
-    )
+    private fun stubUiState(): SelectAuthProviderViewModel.UiState =
+        SelectAuthProviderUiStateMapper(authProviderUiMapper = authProviderUiMapper)(
+            SelectAuthProviderViewModel.DataState(providers = listOf(GOOGLE, APPLE, T_ID)),
+        )
 
     private companion object {
-        val APPLE: AuthProvider = AuthProvider.Apple(isEnabled = false, isVisible = false)
-        val GOOGLE: AuthProvider = AuthProvider.Google(isEnabled = true, isVisible = true)
-        val T_ID: AuthProvider = AuthProvider.TId(isEnabled = false, isVisible = true)
+        val APPLE: AuthProvider = AuthProvider(type = AuthProviderType.APPLE, isEnabled = false, isVisible = false)
+        val GOOGLE: AuthProvider = AuthProvider(type = AuthProviderType.GOOGLE, isEnabled = true, isVisible = true)
+        val T_ID: AuthProvider = AuthProvider(type = AuthProviderType.T_ID, isEnabled = false, isVisible = true)
     }
 }

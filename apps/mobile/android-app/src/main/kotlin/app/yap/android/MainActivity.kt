@@ -9,8 +9,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import app.yap.app.root.App
 import app.yap.core.common.platform.ActivityProvider
-import app.yap.feature.auth.api.entity.AuthState
-import app.yap.feature.auth.api.usecase.ObserveAuthStateUseCase
+import app.yap.feature.auth.api.entity.AuthSessionState
+import app.yap.feature.auth.api.usecase.ObserveAuthSessionStateUseCase
 import app.yap.shared.app.initAndroidKoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -42,20 +42,20 @@ class MainActivity : ComponentActivity() {
         )
         activityProvider = koin.get()
 
-        holdSplashUntilAuthStateResolves(splashScreen, koin.get())
+        holdSplashUntilAuthSessionStateResolves(splashScreen, koin.get())
 
         setContent { App() }
     }
 
-    private fun holdSplashUntilAuthStateResolves(
+    private fun holdSplashUntilAuthSessionStateResolves(
         splashScreen: SplashScreen,
-        observeAuthStateUseCase: ObserveAuthStateUseCase,
+        observeAuthSessionStateUseCase: ObserveAuthSessionStateUseCase,
     ) {
         var isResolved = false
         splashScreen.setKeepOnScreenCondition { !isResolved }
 
         lifecycleScope.launch {
-            observeAuthStateUseCase().first { authState -> authState !is AuthState.Unknown }
+            observeAuthSessionStateUseCase().first { authSessionState -> authSessionState !is AuthSessionState.Unknown }
             isResolved = true
         }
     }

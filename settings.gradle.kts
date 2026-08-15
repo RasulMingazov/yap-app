@@ -28,6 +28,7 @@ dependencyResolutionManagement {
 rootProject.name = "yap-app"
 
 include(":shared:contract:auth")
+include(":shared:contract:common")
 
 include(":apps:mobile:android-app")
 include(":apps:mobile:shared-app")

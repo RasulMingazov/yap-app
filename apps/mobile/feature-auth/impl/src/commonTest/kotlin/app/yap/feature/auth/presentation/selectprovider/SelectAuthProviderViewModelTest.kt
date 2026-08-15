@@ -2,6 +2,8 @@ package app.yap.feature.auth.presentation.selectprovider
 
 import app.yap.core.test.runViewModelTest
 import app.yap.feature.auth.api.entity.AuthProvider
+import app.yap.feature.auth.api.entity.AuthProviderType
+import app.yap.feature.auth.presentation.common.AuthProviderUiMapper
 import app.yap.feature.auth.domain.usecase.StubObserveAuthProvidersUseCase
 import app.yap.feature.auth.presentation.StubNavigator
 import kotlin.test.Test
@@ -56,12 +58,13 @@ internal class SelectAuthProviderViewModelTest {
         val observeAuthProvidersUseCase = StubObserveAuthProvidersUseCase(providers = providers)
         val viewModel = SelectAuthProviderViewModel(
             navigator = navigator,
+            uiStateMapper = SelectAuthProviderUiStateMapper(authProviderUiMapper = AuthProviderUiMapper()),
             observeAuthProvidersUseCase = observeAuthProvidersUseCase,
         )
     }
 
     private companion object {
-        val GOOGLE: AuthProvider = AuthProvider.Google(isEnabled = true, isVisible = true)
-        val T_ID: AuthProvider = AuthProvider.TId(isEnabled = false, isVisible = true)
+        val GOOGLE: AuthProvider = AuthProvider(type = AuthProviderType.GOOGLE, isEnabled = true, isVisible = true)
+        val T_ID: AuthProvider = AuthProvider(type = AuthProviderType.T_ID, isEnabled = false, isVisible = true)
     }
 }

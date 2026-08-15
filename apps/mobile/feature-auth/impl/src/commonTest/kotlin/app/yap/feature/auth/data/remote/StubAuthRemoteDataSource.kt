@@ -4,24 +4,28 @@ import app.yap.contract.auth.GoogleAuthorizationCodeDto
 import app.yap.contract.auth.GoogleCredentialsDto
 import app.yap.contract.auth.RefreshCredentialsDto
 import app.yap.contract.auth.SessionDto
+import app.yap.core.network.ApiResult
 import io.github.rasulmingazov.stubcall.StubCall1
 
 internal class StubAuthRemoteDataSource(
     session: SessionDto = StubSessionDto.stubSessionDto(),
 ) : AuthRemoteDataSource {
 
-    val refreshCall = StubCall1.returns<RefreshCredentialsDto, SessionDto>(session)
-    val loginWithGoogleAuthorizationCodeCall =
-        StubCall1.returns<GoogleAuthorizationCodeDto, SessionDto>(session)
-    val loginWithGoogleIdTokenCall = StubCall1.returns<GoogleCredentialsDto, SessionDto>(session)
+    private val result: ApiResult<SessionDto> = ApiResult.Success(session)
 
-    override suspend fun refresh(credentials: RefreshCredentialsDto): SessionDto =
+    val refreshCall = StubCall1.returns<RefreshCredentialsDto, ApiResult<SessionDto>>(result)
+    val loginWithGoogleAuthorizationCodeCall =
+        StubCall1.returns<GoogleAuthorizationCodeDto, ApiResult<SessionDto>>(result)
+    val loginWithGoogleIdTokenCall = StubCall1.returns<GoogleCredentialsDto, ApiResult<SessionDto>>(result)
+
+    override suspend fun refresh(credentials: RefreshCredentialsDto): ApiResult<SessionDto> =
         refreshCall.invoke(credentials)
 
-    override suspend fun loginWithGoogleAuthorizationCode(code: GoogleAuthorizationCodeDto): SessionDto =
-        loginWithGoogleAuthorizationCodeCall.invoke(code)
+    override suspend fun loginWithGoogleAuthorizationCode(
+        code: GoogleAuthorizationCodeDto,
+    ): ApiResult<SessionDto> = loginWithGoogleAuthorizationCodeCall.invoke(code)
 
-    override suspend fun loginWithGoogleIdToken(credentials: GoogleCredentialsDto): SessionDto =
+    override suspend fun loginWithGoogleIdToken(credentials: GoogleCredentialsDto): ApiResult<SessionDto> =
         loginWithGoogleIdTokenCall.invoke(credentials)
 }
 

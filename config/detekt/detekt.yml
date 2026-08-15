@@ -22,6 +22,10 @@ naming:
     constantPattern: '[A-Za-z][_A-Za-z0-9]*'
 
 style:
+  # `docs/001-code-conventions.md` prefers guard clauses, and two of them already exceed the
+  # default limit of two returns. Guard clauses are excluded; branchy code still counts.
+  ReturnCount:
+    excludeGuardClauses: true
   MagicNumber:
     ignoreAnnotated: ['Composable']
   MaxLineLength:

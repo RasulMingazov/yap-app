@@ -1,7 +1,7 @@
 package app.yap.feature.auth.data.mapper
 
 import app.yap.contract.auth.SessionDto
-import app.yap.feature.auth.api.entity.AuthState
+import app.yap.feature.auth.api.entity.AuthSessionState
 import app.yap.feature.auth.api.entity.UserId
 import app.yap.feature.auth.data.local.SessionLocal
 import kotlin.io.encoding.Base64
@@ -21,9 +21,9 @@ internal fun SessionDto.toLocal(): SessionLocal = SessionLocal(
     refreshTokenExpiresAtEpochSeconds = refreshTokenExpiresAtEpochSeconds,
 )
 
-internal fun SessionLocal.toDomain(): AuthState {
-    val userId = accessToken.subjectClaim() ?: return AuthState.LoggedOut
-    return AuthState.LoggedIn(userId = UserId(userId))
+internal fun SessionLocal.toDomain(): AuthSessionState {
+    val userId = accessToken.subjectClaim() ?: return AuthSessionState.LoggedOut
+    return AuthSessionState.LoggedIn(userId = UserId(userId))
 }
 
 @OptIn(ExperimentalEncodingApi::class)

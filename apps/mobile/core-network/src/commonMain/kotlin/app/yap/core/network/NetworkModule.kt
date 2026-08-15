@@ -17,4 +17,6 @@ fun coreNetworkModule(baseUrl: String): Module = module {
             }
         }
     } onClose { networkClient -> networkClient?.close() }
+
+    single { ApiClient(networkClient = get()) }
 }

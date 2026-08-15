@@ -7,9 +7,11 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
+            api(libs.ktor.client.core)
+
             implementation(project(":apps:mobile:core-common"))
+            implementation(project(":shared:contract:common"))
             implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.client.core)
             implementation(libs.ktor.serialization.json)
         }
         androidMain.dependencies {
@@ -17,6 +19,13 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+        }
+        commonTest.dependencies {
+            implementation(project(":shared:contract:common"))
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
+            implementation(libs.ktor.serialization.json)
         }
     }
 }

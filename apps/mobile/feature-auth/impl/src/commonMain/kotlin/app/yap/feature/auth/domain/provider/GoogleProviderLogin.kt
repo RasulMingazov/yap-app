@@ -1,15 +1,14 @@
 package app.yap.feature.auth.domain.provider
 
-import app.yap.feature.auth.api.entity.AuthProvider
+import app.yap.feature.auth.api.entity.AuthProviderType
 import app.yap.feature.auth.api.entity.LoginOutcome
-import app.yap.feature.auth.domain.repository.AuthRepository
-import kotlin.reflect.KClass
+import app.yap.feature.auth.domain.repository.GoogleAuthRepository
 
 internal class GoogleProviderLogin(
-    private val authRepository: AuthRepository,
+    private val googleAuthRepository: GoogleAuthRepository,
 ) : ProviderLogin {
 
-    override val provider: KClass<out AuthProvider> = AuthProvider.Google::class
+    override val type: AuthProviderType = AuthProviderType.GOOGLE
 
-    override suspend fun login(): LoginOutcome = authRepository.loginWithGoogle()
+    override suspend fun login(): LoginOutcome = googleAuthRepository.login()
 }

@@ -3,15 +3,16 @@ package app.yap.feature.auth.di
 import app.yap.core.common.network.AccessTokenProvider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import app.yap.core.design.navigation.bottomSheetScene
-import app.yap.core.network.NetworkClient
 import app.yap.feature.auth.api.AuthNavKey
+import app.yap.feature.auth.api.entity.LegalLinks
+import app.yap.feature.auth.api.usecase.GetLegalLinksUseCase
 import app.yap.feature.auth.api.usecase.ObserveAuthProvidersUseCase
-import app.yap.feature.auth.api.usecase.ObserveAuthStateUseCase
+import app.yap.feature.auth.api.usecase.ObserveAuthSessionStateUseCase
 import app.yap.feature.auth.api.usecase.LoginUseCase
-import app.yap.feature.auth.api.usecase.RenewSessionUseCase
-import app.yap.feature.auth.data.AuthStateSource
+import app.yap.feature.auth.api.usecase.RefreshSessionUseCase
 import app.yap.feature.auth.data.CurrentTime
 import app.yap.feature.auth.data.DefaultAccessTokenProvider
+import app.yap.feature.auth.data.SessionStore
 import app.yap.feature.auth.data.SystemCurrentTime
 import app.yap.feature.auth.data.identity.NonceGenerator
 import app.yap.feature.auth.data.identity.RandomNonceGenerator
@@ -19,16 +20,23 @@ import app.yap.feature.auth.data.local.SessionStorage
 import app.yap.feature.auth.data.local.createSessionStorage
 import app.yap.feature.auth.data.remote.AuthRemoteDataSource
 import app.yap.feature.auth.data.remote.DefaultAuthRemoteDataSource
-import app.yap.feature.auth.data.repository.DefaultAuthRepository
+import app.yap.feature.auth.data.repository.DefaultAuthSessionRepository
+import app.yap.feature.auth.data.repository.DefaultGoogleAuthRepository
 import app.yap.feature.auth.domain.provider.GoogleProviderLogin
 import app.yap.feature.auth.domain.provider.ProviderLogin
-import app.yap.feature.auth.domain.repository.AuthRepository
+import app.yap.feature.auth.domain.repository.AuthSessionRepository
+import app.yap.feature.auth.domain.repository.GoogleAuthRepository
+import app.yap.feature.auth.domain.usecase.DefaultGetLegalLinksUseCase
 import app.yap.feature.auth.domain.usecase.DefaultLoginUseCase
 import app.yap.feature.auth.domain.usecase.DefaultObserveAuthProvidersUseCase
-import app.yap.feature.auth.domain.usecase.DefaultObserveAuthStateUseCase
-import app.yap.feature.auth.domain.usecase.DefaultRenewSessionUseCase
+import app.yap.feature.auth.domain.usecase.DefaultObserveAuthSessionStateUseCase
+import app.yap.feature.auth.domain.usecase.DefaultRefreshSessionUseCase
+import app.yap.feature.auth.presentation.common.AuthProviderUiMapper
+import app.yap.feature.auth.presentation.login.LoginNewsMapper
+import app.yap.feature.auth.presentation.login.LoginUiStateMapper
 import app.yap.feature.auth.presentation.login.LoginViewModel
 import app.yap.feature.auth.presentation.login.ui.LoginScreen
+import app.yap.feature.auth.presentation.selectprovider.SelectAuthProviderUiStateMapper
 import app.yap.feature.auth.presentation.selectprovider.SelectAuthProviderViewModel
 import app.yap.feature.auth.presentation.selectprovider.ui.SelectAuthProviderScreen
 import org.koin.core.module.Module
@@ -47,13 +55,7 @@ fun featureAuthModule(
 ): Module = module {
     single<SessionStorage> { createSessionStorage() }
 
-    single<AuthRemoteDataSource> {
-        val networkClient = get<NetworkClient>()
-        DefaultAuthRemoteDataSource(
-            baseUrl = networkClient.baseUrl,
-            httpClient = networkClient.httpClient,
-        )
-    }
+    single<AuthRemoteDataSource> { DefaultAuthRemoteDataSource(apiClient = get()) }
 
     factory<NonceGenerator> { RandomNonceGenerator() }
 
@@ -65,45 +67,32 @@ fun featureAuthModule(
 
     single<CurrentTime> { SystemCurrentTime() }
 
-    single { AuthStateSource() }
+    bindSessionGraph()
 
-    single<AccessTokenProvider> {
-        DefaultAccessTokenProvider(
-            authRemoteDataSource = lazy { get<AuthRemoteDataSource>() },
-            authStateSource = get(),
-            sessionStorage = get(),
-        )
-    }
+    factory<ObserveAuthSessionStateUseCase> { DefaultObserveAuthSessionStateUseCase(authSessionRepository = get()) }
 
-    single<AuthRepository> {
-        DefaultAuthRepository(
-            accessTokenProvider = get(),
-            authRemoteDataSource = get(),
-            authStateSource = get(),
-            currentTime = get(),
-            googleCredentialProvider = get(),
-            nonceGenerator = get(),
-            sessionStorage = get(),
-        )
-    }
+    factory<RefreshSessionUseCase> { DefaultRefreshSessionUseCase(authSessionRepository = get()) }
 
-    factory<ObserveAuthStateUseCase> { DefaultObserveAuthStateUseCase(authRepository = get()) }
-
-    factory<RenewSessionUseCase> { DefaultRenewSessionUseCase(authRepository = get()) }
-
-    single { GoogleProviderLogin(authRepository = get()) } bind ProviderLogin::class
+    single { GoogleProviderLogin(googleAuthRepository = get()) } bind ProviderLogin::class
 
     factory<LoginUseCase> { DefaultLoginUseCase(providerLogins = getAll<ProviderLogin>()) }
 
     factory<ObserveAuthProvidersUseCase> { DefaultObserveAuthProvidersUseCase(platform = get()) }
 
+    factory<GetLegalLinksUseCase> {
+        DefaultGetLegalLinksUseCase(LegalLinks(privacyUrl = privacyUrl, termsUrl = termsUrl))
+    }
+
+    bindPresentationMappers()
+
     viewModel {
         LoginViewModel(
+            getLegalLinksUseCase = get(),
             loginUseCase = get(),
             motionPreferences = get(),
             navigator = get(),
-            privacyUrl = privacyUrl,
-            termsUrl = termsUrl,
+            newsMapper = get(),
+            uiStateMapper = get(),
         )
     }
 
@@ -111,12 +100,51 @@ fun featureAuthModule(
         SelectAuthProviderViewModel(
             navigator = get(),
             observeAuthProvidersUseCase = get(),
+            uiStateMapper = get(),
         )
     }
 
     navigation<AuthNavKey.Login> { LoginScreen() }
 
     navigation<AuthNavKey.SelectAuthProvider>(metadata = bottomSheetScene()) { SelectAuthProviderScreen() }
+}
+
+private fun Module.bindSessionGraph() {
+    single { SessionStore(currentTime = get(), sessionStorage = get()) }
+
+    single<AccessTokenProvider> {
+        DefaultAccessTokenProvider(
+            authRemoteDataSource = lazy { get<AuthRemoteDataSource>() },
+            sessionStore = get(),
+        )
+    }
+
+    single<AuthSessionRepository> {
+        DefaultAuthSessionRepository(
+            accessTokenProvider = get(),
+            currentTime = get(),
+            sessionStore = get(),
+        )
+    }
+
+    single<GoogleAuthRepository> {
+        DefaultGoogleAuthRepository(
+            authRemoteDataSource = get(),
+            googleCredentialProvider = get(),
+            nonceGenerator = get(),
+            sessionStore = get(),
+        )
+    }
+}
+
+private fun Module.bindPresentationMappers() {
+    factory { AuthProviderUiMapper() }
+
+    factory { LoginNewsMapper(authProviderUiMapper = get()) }
+
+    factory { LoginUiStateMapper() }
+
+    factory { SelectAuthProviderUiStateMapper(authProviderUiMapper = get()) }
 }
 
 internal expect fun Module.bindGoogleCredentialProvider(

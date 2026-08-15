@@ -5,6 +5,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import app.yap.core.design.theme.YapTheme
+import app.yap.feature.auth.api.entity.LegalLinks
 import app.yap.feature.auth.presentation.login.LoginUiStateMapper
 import app.yap.feature.auth.presentation.login.LoginViewModel
 import kotlinx.coroutines.flow.Flow
@@ -37,9 +38,10 @@ internal fun stubLoginUiState(
     isLoggingIn: Boolean = false,
     privacyUrl: String? = PRIVACY_URL,
     termsUrl: String? = TERMS_URL,
-): LoginViewModel.UiState = LoginUiStateMapper(
-    dataState = LoginViewModel.DataState(isLoggingIn = isLoggingIn),
+): LoginViewModel.UiState = LoginUiStateMapper().invoke(
+    dataState = LoginViewModel.DataState(
+        isLoggingIn = isLoggingIn,
+        legalLinks = LegalLinks(privacyUrl = privacyUrl, termsUrl = termsUrl),
+    ),
     isMotionReduced = isMotionReduced,
-    privacyUrl = privacyUrl,
-    termsUrl = termsUrl,
 )

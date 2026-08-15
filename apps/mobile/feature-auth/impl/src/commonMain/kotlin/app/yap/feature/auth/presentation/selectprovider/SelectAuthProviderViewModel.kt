@@ -5,21 +5,21 @@ import app.yap.core.common.navigation.Navigator
 import app.yap.core.common.presentation.BaseViewModel
 import app.yap.feature.auth.api.entity.AuthProvider
 import app.yap.feature.auth.api.usecase.ObserveAuthProvidersUseCase
+import app.yap.feature.auth.presentation.common.AuthProviderUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.DrawableResource
-import org.jetbrains.compose.resources.StringResource
 
 internal class SelectAuthProviderViewModel(
     private val navigator: Navigator,
     observeAuthProvidersUseCase: ObserveAuthProvidersUseCase,
+    uiStateMapper: SelectAuthProviderUiStateMapper,
 ) : BaseViewModel() {
 
     private val dataState = MutableStateFlow(DataState())
 
-    val uiState: StateFlow<UiState> = dataState.mapState(SelectAuthProviderUiStateMapper::invoke)
+    val uiState: StateFlow<UiState> = dataState.mapState(uiStateMapper::invoke)
 
     init {
         viewModelScope.launch {
@@ -38,11 +38,8 @@ internal class SelectAuthProviderViewModel(
     data class UiState(val providers: List<Provider>) {
 
         data class Provider(
-            val iconRes: DrawableResource,
-            val isEnabled: Boolean,
-            val isMonochrome: Boolean,
-            val labelRes: StringResource,
             val provider: AuthProvider,
+            val ui: AuthProviderUi,
         )
     }
 

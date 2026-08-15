@@ -3,8 +3,8 @@ package app.yap.app.root.navigation
 import androidx.navigation3.runtime.NavKey
 import app.yap.core.common.navigation.Navigator
 import app.yap.feature.auth.api.AuthNavKey
-import app.yap.feature.auth.api.entity.AuthState
-import app.yap.feature.auth.api.usecase.ObserveAuthStateUseCase
+import app.yap.feature.auth.api.entity.AuthSessionState
+import app.yap.feature.auth.api.usecase.ObserveAuthSessionStateUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -14,14 +14,14 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 
 internal class RootBackStack(
-    observeAuthStateUseCase: ObserveAuthStateUseCase,
+    observeAuthSessionStateUseCase: ObserveAuthSessionStateUseCase,
 ) : Navigator {
 
     private val tail = MutableStateFlow<List<NavKey>>(emptyList())
 
     private var pushedOnto: List<NavKey>? = null
 
-    val keys: Flow<List<NavKey>> = observeAuthStateUseCase()
+    val keys: Flow<List<NavKey>> = observeAuthSessionStateUseCase()
         .map(::rootKeys)
         .distinctUntilChanged()
         .onEach(::dropTailIfBaseChanged)
@@ -42,9 +42,9 @@ internal class RootBackStack(
         tail.update { pushed -> pushed.dropLast(1) }
     }
 
-    private fun rootKeys(authState: AuthState): List<NavKey> = when (authState) {
-        is AuthState.Unknown -> emptyList()
-        is AuthState.LoggedOut -> listOf(AuthNavKey.Login)
-        is AuthState.LoggedIn -> listOf(RootNavKey.Main)
+    private fun rootKeys(authSessionState: AuthSessionState): List<NavKey> = when (authSessionState) {
+        is AuthSessionState.Unknown -> emptyList()
+        is AuthSessionState.LoggedOut -> listOf(AuthNavKey.Login)
+        is AuthSessionState.LoggedIn -> listOf(RootNavKey.Main)
     }
 }

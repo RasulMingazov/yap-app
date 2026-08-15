@@ -4,6 +4,7 @@ import app.yap.feature.auth.generated.resources.Res
 import app.yap.feature.auth.generated.resources.login_topic_meeting_people
 import app.yap.feature.auth.generated.resources.login_topic_rejections
 import app.yap.feature.auth.generated.resources.login_topic_small_talk
+import app.yap.feature.auth.api.entity.LegalLinks
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -55,11 +56,9 @@ internal class LoginUiStateMapperTest {
         isMotionReduced: Boolean = false,
         privacyUrl: String? = PRIVACY_URL,
         termsUrl: String? = TERMS_URL,
-    ): LoginViewModel.UiState = LoginUiStateMapper(
-        dataState = dataState,
+    ): LoginViewModel.UiState = LoginUiStateMapper().invoke(
+        dataState = dataState.copy(legalLinks = LegalLinks(privacyUrl = privacyUrl, termsUrl = termsUrl)),
         isMotionReduced = isMotionReduced,
-        privacyUrl = privacyUrl,
-        termsUrl = termsUrl,
     )
 
     private companion object {

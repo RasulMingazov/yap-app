@@ -40,7 +40,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,7 +64,7 @@ import app.yap.feature.auth.generated.resources.login_hero
 import app.yap.feature.auth.generated.resources.login_marquee
 import app.yap.feature.auth.generated.resources.login_primary_action
 import app.yap.feature.auth.generated.resources.login_primary_action_semantics
-import app.yap.feature.auth.presentation.AuthResultKeys
+import app.yap.feature.auth.presentation.common.AuthResultKeys
 import app.yap.feature.auth.presentation.login.LoginViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

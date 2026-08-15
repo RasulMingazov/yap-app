@@ -1,9 +1,9 @@
 package app.yap.feature.auth.presentation.selectprovider
 
 import app.yap.feature.auth.api.entity.AuthProvider
-import app.yap.feature.auth.presentation.AuthProviderResources
+import app.yap.feature.auth.presentation.common.AuthProviderUiMapper
 
-internal object SelectAuthProviderUiStateMapper {
+internal class SelectAuthProviderUiStateMapper(private val authProviderUiMapper: AuthProviderUiMapper) {
 
     operator fun invoke(
         dataState: SelectAuthProviderViewModel.DataState,
@@ -13,15 +13,9 @@ internal object SelectAuthProviderUiStateMapper {
             .map(::toRow),
     )
 
-    private fun toRow(provider: AuthProvider): SelectAuthProviderViewModel.UiState.Provider {
-        val mark = AuthProviderResources.markOf(provider)
-
-        return SelectAuthProviderViewModel.UiState.Provider(
-            iconRes = mark.iconRes,
-            isEnabled = provider.isEnabled,
-            isMonochrome = mark.isMonochrome,
-            labelRes = AuthProviderResources.labelOf(provider),
+    private fun toRow(provider: AuthProvider): SelectAuthProviderViewModel.UiState.Provider =
+        SelectAuthProviderViewModel.UiState.Provider(
             provider = provider,
+            ui = authProviderUiMapper(provider.type),
         )
-    }
 }

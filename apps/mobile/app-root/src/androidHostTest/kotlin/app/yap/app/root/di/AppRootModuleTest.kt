@@ -1,7 +1,7 @@
 package app.yap.app.root.di
 
-import app.yap.feature.auth.api.usecase.ObserveAuthStateUseCase
-import app.yap.feature.auth.api.usecase.RenewSessionUseCase
+import app.yap.feature.auth.api.usecase.ObserveAuthSessionStateUseCase
+import app.yap.feature.auth.api.usecase.RefreshSessionUseCase
 import kotlin.test.Test
 import org.koin.test.verify.verify
 
@@ -11,8 +11,8 @@ internal class AppRootModuleTest {
     fun `GIVEN the app root module WHEN it is verified THEN every binding resolves`() {
         appRootModule().verify(
             extraTypes = listOf(
-                ObserveAuthStateUseCase::class,
-                RenewSessionUseCase::class,
+                ObserveAuthSessionStateUseCase::class,
+                RefreshSessionUseCase::class,
             ),
         )
     }

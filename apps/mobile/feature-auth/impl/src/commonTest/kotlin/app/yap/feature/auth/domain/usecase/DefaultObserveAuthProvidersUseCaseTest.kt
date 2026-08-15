@@ -2,6 +2,7 @@ package app.yap.feature.auth.domain.usecase
 
 import app.yap.core.common.platform.Platform
 import app.yap.feature.auth.api.entity.AuthProvider
+import app.yap.feature.auth.api.entity.AuthProviderType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.first
@@ -15,11 +16,11 @@ internal class DefaultObserveAuthProvidersUseCaseTest {
 
         assertEquals(
             expected = listOf(
-                AuthProvider.Google::class,
-                AuthProvider.Apple::class,
-                AuthProvider.TId::class,
+                AuthProviderType.GOOGLE,
+                AuthProviderType.APPLE,
+                AuthProviderType.T_ID,
             ),
-            actual = providers.map { provider -> provider::class },
+            actual = providers.map(AuthProvider::type),
         )
     }
 
@@ -46,16 +47,16 @@ internal class DefaultObserveAuthProvidersUseCaseTest {
     @Test
     fun `GIVEN any platform WHEN the roster is observed THEN only Google may be chosen`() = runTest {
         assertEquals(
-            expected = listOf(AuthProvider.Google::class),
+            expected = listOf(AuthProviderType.GOOGLE),
             actual = roster(platform = Platform.ANDROID)
                 .filter(AuthProvider::isEnabled)
-                .map { provider -> provider::class },
+                .map(AuthProvider::type),
         )
         assertEquals(
-            expected = listOf(AuthProvider.Google::class),
+            expected = listOf(AuthProviderType.GOOGLE),
             actual = roster(platform = Platform.IOS)
                 .filter(AuthProvider::isEnabled)
-                .map { provider -> provider::class },
+                .map(AuthProvider::type),
         )
     }
 

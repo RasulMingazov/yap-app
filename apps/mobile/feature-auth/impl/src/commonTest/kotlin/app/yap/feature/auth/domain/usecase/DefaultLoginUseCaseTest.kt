@@ -1,6 +1,7 @@
 package app.yap.feature.auth.domain.usecase
 
 import app.yap.feature.auth.api.entity.AuthProvider
+import app.yap.feature.auth.api.entity.AuthProviderType
 import app.yap.feature.auth.api.entity.LoginOutcome
 import app.yap.feature.auth.domain.provider.StubProviderLogin
 import kotlin.test.Test
@@ -29,7 +30,7 @@ internal class DefaultLoginUseCaseTest {
         runTest {
             val env = Environment()
 
-            val outcome = env.loginUseCase(AuthProvider.TId(isEnabled = true, isVisible = true))
+            val outcome = env.loginUseCase(AuthProvider(type = AuthProviderType.T_ID, isEnabled = true, isVisible = true))
 
             assertEquals(expected = LoginOutcome.Unavailable, actual = outcome)
             env.googleLogin.loginCall.notCalled()
@@ -39,7 +40,7 @@ internal class DefaultLoginUseCaseTest {
     fun `GIVEN a registered provider the roster disables WHEN it is chosen THEN its handler is left alone`() = runTest {
         val env = Environment()
 
-        val outcome = env.loginUseCase(AuthProvider.Google(isEnabled = false, isVisible = true))
+        val outcome = env.loginUseCase(AuthProvider(type = AuthProviderType.GOOGLE, isEnabled = false, isVisible = true))
 
         assertEquals(expected = LoginOutcome.Unavailable, actual = outcome)
         env.googleLogin.loginCall.notCalled()
@@ -77,7 +78,7 @@ internal class DefaultLoginUseCaseTest {
         private val gate = CompletableDeferred<Unit>().apply { if (!isAttemptHeldOpen) complete(Unit) }
 
         val googleLogin = StubProviderLogin(
-            provider = AuthProvider.Google::class,
+            type = AuthProviderType.GOOGLE,
             outcome = outcome,
             gate = gate,
         )
@@ -88,6 +89,6 @@ internal class DefaultLoginUseCaseTest {
 
     private companion object {
         val ATTEMPT_BOUND = 60.seconds
-        val ENABLED_GOOGLE = AuthProvider.Google(isEnabled = true, isVisible = true)
+        val ENABLED_GOOGLE = AuthProvider(type = AuthProviderType.GOOGLE, isEnabled = true, isVisible = true)
     }
 }

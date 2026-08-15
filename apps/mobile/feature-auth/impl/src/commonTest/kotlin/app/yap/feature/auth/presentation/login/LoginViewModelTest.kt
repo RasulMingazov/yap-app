@@ -4,7 +4,10 @@ import app.yap.core.common.platform.MotionPreferences
 import app.yap.core.test.runViewModelTest
 import app.yap.feature.auth.api.AuthNavKey
 import app.yap.feature.auth.api.entity.AuthProvider
+import app.yap.feature.auth.api.entity.AuthProviderType
+import app.yap.feature.auth.api.entity.LegalLinks
 import app.yap.feature.auth.api.entity.LoginOutcome
+import app.yap.feature.auth.presentation.common.AuthProviderUiMapper
 import app.yap.feature.auth.domain.usecase.StubLoginUseCase
 import app.yap.feature.auth.presentation.StubNavigator
 import app.yap.feature.auth.generated.resources.Res
@@ -14,7 +17,9 @@ import app.yap.feature.auth.generated.resources.login_provider_t_id
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -51,7 +56,12 @@ internal class LoginViewModelTest {
         runViewModelTest {
             val env = Environment()
             val progress = mutableListOf<Boolean>()
-            backgroundScope.launch { env.viewModel.uiState.collect { state -> progress += state.isLoggingIn } }
+            backgroundScope.launch {
+                env.viewModel.uiState
+                    .map { state -> state.isLoggingIn }
+                    .distinctUntilChanged()
+                    .collect { isLoggingIn -> progress += isLoggingIn }
+            }
             env.viewModel.onEvent(LoginViewModel.Event.PrimaryActionClicked)
             runCurrent()
 
@@ -170,18 +180,21 @@ internal class LoginViewModelTest {
         val loginUseCase = StubLoginUseCase(outcome = outcome, gate = gate)
         val navigator = StubNavigator()
         val viewModel = LoginViewModel(
+            getLegalLinksUseCase = { LegalLinks(privacyUrl = PRIVACY_URL, termsUrl = TERMS_URL) },
             loginUseCase = loginUseCase,
             motionPreferences = MotionPreferences { false },
             navigator = navigator,
-            privacyUrl = "https://yap.app/privacy",
-            termsUrl = "https://yap.app/terms",
+            newsMapper = LoginNewsMapper(authProviderUiMapper = AuthProviderUiMapper()),
+            uiStateMapper = LoginUiStateMapper(),
         )
 
         fun releaseAttempt() = gate.complete(Unit)
     }
 
     private companion object {
-        val GOOGLE: AuthProvider = AuthProvider.Google(isEnabled = true, isVisible = true)
-        val T_ID: AuthProvider = AuthProvider.TId(isEnabled = false, isVisible = true)
+        const val PRIVACY_URL = "https://yap.app/privacy"
+        const val TERMS_URL = "https://yap.app/terms"
+        val GOOGLE: AuthProvider = AuthProvider(type = AuthProviderType.GOOGLE, isEnabled = true, isVisible = true)
+        val T_ID: AuthProvider = AuthProvider(type = AuthProviderType.T_ID, isEnabled = false, isVisible = true)
     }
 }

@@ -1,553 +1,621 @@
-# Phase 0 Research: Login Screen
+# Research: Login Screen
 
-Every unknown in the plan's Technical Context is resolved below. Nothing is left as
-NEEDS CLARIFICATION.
+**Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen` | **Refreshed**: 2026-08-15
+
+The decisions behind the plan, as implemented. Superseded reasoning is dropped rather than kept as
+archaeology; what remains is what a reader needs to change this code safely.
+
+**Design source** throughout: Claude Design project `0c49e08b-d7ab-4cd3-88be-8483024790e5`, file
+`screen_login.dc.html`. Its `themeVals()` block holds the exact light and dark palette; its markup
+holds the sheet chrome, the provider marks, and the snackbar. Values are lifted, not invented.
 
 ## R1. Google login on Android
 
-**Decision**: Credential Manager with `GetSignInWithGoogleOption` as the primary path, wrapped by
-`AndroidGoogleCredentialProvider` in `feature-auth/impl/src/androidMain`, which falls back to the
-browser flow of R14 when no credential provider is present.
+**Decision**: Credential Manager with `GetSignInWithGoogleOption`, wrapped by
+`AndroidGoogleCredentialProvider` in `feature-auth/impl/src/androidMain`, falling back to R14's
+browser flow when no credential provider is present.
 
-- `androidx.credentials:credentials` + `androidx.credentials:credentials-play-services-auth`
-  (1.7.0-alpha03 is what the current Android guide pins; take the newest stable at
-  implementation time and record it in `gradle/libs.versions.toml`).
-- `com.google.android.libraries.identity.googleid:googleid` for `GetSignInWithGoogleOption`
-  and `GoogleIdTokenCredential`.
+- `androidx.credentials:credentials` + `:credentials-play-services-auth`, plus
+  `com.google.android.libraries.identity.googleid` for the option and the credential type.
 - Build the option with the **web** client ID as `serverClientId` plus a nonce, call
-  `CredentialManager.getCredential(request, context)`, then extract the credential when
-  `credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL` and read
-  `idToken`.
-- The call needs an **Activity** context, not the application context. `MainActivity` publishes
-  itself through an `ActivityProvider` in `core-common`'s `androidMain`, wired by
-  `initAndroidKoin`. The provider holds a nulled-out reference outside the resumed lifecycle so
-  no Activity leaks.
+  `CredentialManager.getCredential(request, context)`, and read `idToken` when the credential type
+  matches.
+- The call needs an **Activity** context. `MainActivity` publishes itself through an
+  `ActivityProvider` in `core-common`'s `androidMain`, nulled outside the resumed lifecycle so no
+  Activity leaks.
 
-**Rationale**: `GetSignInWithGoogleOption` is the button-driven flow, which is exactly what the
-design specifies — the user taps "ВОЙТИ", then picks a provider. `GetGoogleIdOption` with
-`filterByAuthorizedAccounts` is the one-tap bottom-sheet flow and would fire before the user
-chose anything.
+**Rationale**: `GetSignInWithGoogleOption` is the button-driven flow the design specifies.
+`GetGoogleIdOption` with `filterByAuthorizedAccounts` would fire before the user chose anything.
 
-**Alternatives considered**: the legacy `GoogleSignInClient` from play-services-auth is
-deprecated in favour of Credential Manager. A prebuilt KMP wrapper (KMPAuth,
-compose-google-login) would hide both platforms behind one dependency, but it owns the very
-boundary this project's guides put in `androidMain`/`iosMain`, and it would place a third-party
-type in the feature's public surface.
+**Alternatives**: the legacy `GoogleSignInClient` is deprecated; a prebuilt KMP wrapper would own
+the very boundary the guides put in platform source sets and place a third-party type in the
+feature's public surface.
 
-**Cancellation**: Credential Manager reports user dismissal as
-`GetCredentialCancellationException`. FR-013 requires cancellation to be silent, so the adapter
-maps it to a distinct `LoginOutcome.Cancelled` rather than to a failure — this is the branch the
-"cancellation emits no news" rule in `docs/mobile/presentation/002-ui-compose.md` depends on.
-
-**Falling back**: `GetCredentialProviderConfigurationException` — and `NoCredentialException` when
-no provider can serve the request at all — mean the device has no Google credential provider.
-Those two, and only those two, trigger R14's browser flow. A cancellation must **not** trigger it:
-the user said no, and reopening the same question in a browser would be the opposite of FR-013.
+**Cancellation vs fallback**: `GetCredentialCancellationException` is a silent cancellation
+(FR-029). Only `GetCredentialProviderConfigurationException` and `NoCredentialException` — the
+device has no Google credential provider — trigger the browser flow. A cancellation must never
+trigger it: the user said no, and reopening the question in a browser is the opposite of FR-029.
 
 ## R2. Google login on iOS
 
 **Decision**: `GoogleCredentialProvider` is a public `suspend` interface in `feature-auth/api`,
-implemented in **Swift** in the Xcode host using the GoogleSignIn SDK, and handed to Kotlin
-through `initIosKoin(baseUrl:googleServerClientId:googleCredentialProvider:)` exported by
-`shared-app`.
+implemented in **Swift** in the Xcode host with the GoogleSignIn SDK and handed to Kotlin through
+`initIosKoin(...)` exported by `shared-app`.
 
-- GoogleSignIn is added to the Xcode project via Swift Package Manager.
-- `shared-app` must `api(project(":apps:mobile:feature-auth:api"))` and `export` it from the
-  framework so Swift can see and implement `GoogleCredentialProvider`.
-- Kotlin `suspend` functions surface to Swift as `async`, so the Swift implementation is a plain
-  `async` function returning `GoogleCredential.IdToken`. iOS never returns an authorization code:
-  the browser fallback of R14 is Android-only, which is also why `/v1/auth/google/code` is an
-  Android-only door.
-- The host also needs the reversed-client-ID URL scheme and must forward
-  `application(_:open:options:)` to `GIDSignIn.sharedInstance.handle(_:)`.
+- GoogleSignIn is added via Swift Package Manager; `shared-app` must `api(...)` and `export(...)`
+  the auth API so Swift can implement the port.
+- Kotlin `suspend` surfaces to Swift as `async`. iOS never returns an authorization code, which is
+  why `/v1/auth/google/code` is an Android-only door.
+- The host needs the reversed-client-ID URL scheme and must forward
+  `application(_:open:options:)` to `GIDSignIn`.
 
-**Rationale**: The GoogleSignIn SDK is an Objective-C/Swift framework that would otherwise need
-cinterop or CocoaPods wiring inside the Gradle build. Keeping it entirely in Xcode means the
-Gradle build stays independent of an iOS SDK, and the Kotlin side sees one narrow suspend
-function. `initKoin` already accepts an `appDeclaration` for exactly this kind of platform-only
-binding, so the pattern is the one the DI guide already describes.
+**Rationale**: keeping the SDK in Xcode leaves the Gradle build independent of an iOS SDK, and the
+Kotlin side sees one narrow suspend function.
 
-**Alternatives considered**: CocoaPods integration through the Kotlin CocoaPods plugin — rejected
-because it makes `./gradlew build` depend on a working CocoaPods install. cinterop against the
-GoogleSignIn framework — rejected as more fragile than a ten-line Swift adapter.
-
-**Consequence to state plainly**: `./gradlew build` cannot verify the iOS host. The Gradle side is
-verified by `:apps:mobile:shared-app:compileKotlinIosSimulatorArm64`; the Swift side is verified
-by building and running the app in Xcode, which is a manual step in `quickstart.md`.
+**Consequence to state plainly**: `./gradlew build` cannot verify the iOS host. Gradle is verified
+by `:apps:mobile:shared-app:compileKotlinIosSimulatorArm64`; the Swift side is a manual Xcode step.
 
 ## R3. Session storage on device
 
-**Decision**: one `SessionStorage` `expect`/`actual` pair in `feature-auth/impl`.
+**Decision**: one `SessionStorage` `expect`/`actual` factory in `feature-auth/impl`. Android: an
+AES-GCM key in the Android Keystore encrypts the token values, ciphertext in DataStore Preferences.
+iOS: Keychain (`kSecClassGenericPassword`) with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`.
 
-- **Android**: an AES-GCM key generated in the Android Keystore encrypts the token values; the
-  ciphertext lives in DataStore Preferences (`androidx.datastore:datastore-preferences`).
-- **iOS**: Keychain (`kSecClassGenericPassword`) through `platform.Security`, which Kotlin/Native
-  provides with no extra dependency, with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`.
+**Rationale**: the refresh token is a long-lived credential and belongs behind hardware-backed
+protection. `androidx.security:security-crypto` is no longer developed; generating the key directly
+gives the same protection with a maintained storage API and a coroutine interface.
 
-**Rationale**: The refresh token is a long-lived credential, so it belongs behind
-hardware-backed protection on both platforms. `androidx.security:security-crypto`
-(`EncryptedSharedPreferences`) is the classic answer but is no longer actively developed;
-generating the key in the Keystore directly and storing ciphertext in DataStore gives the same
-protection with a maintained storage API and a coroutine interface. On iOS the Keychain is
-already encrypted by Secure Enclave-derived class keys, so no second layer is needed.
-
-**Alternatives considered**: a KMP secure-storage library (KVault, Kissme, KSafe) — rejected
-because the `expect`/`actual` pair is roughly fifty lines per platform and the guides already
-require platform adapters to sit in platform source sets. Plain DataStore with no encryption —
-rejected: `allowBackup="false"` and the app sandbox are not sufficient protection for a refresh
-token on a rooted device.
+**Alternatives**: a KMP secure-storage library — the `expect`/`actual` pair is ~50 lines per
+platform and the guides already require platform adapters in platform source sets. Plain unencrypted
+DataStore — not sufficient protection for a refresh token on a rooted device.
 
 ## R4. Keeping the network layer authenticated
 
-**Decision**: `feature-auth/impl` provides the `AccessTokenProvider` implementation that
-`coreNetworkModule` already looks up with `getOrNull<AccessTokenProvider>()`.
+**Decision**: `feature-auth/impl` provides the `AccessTokenProvider` that `coreNetworkModule` looks
+up with `getOrNull<AccessTokenProvider>()`.
 
 - `getAccessToken(rejectedAccessToken = null)` returns the stored access token.
-- `getAccessToken(rejectedAccessToken = <token>)` refreshes: it serializes concurrent callers with
-  a mutex, returns a newer token immediately if one arrived while waiting, calls
-  `POST /v1/auth/refresh` otherwise, and persists the rotated session — the seam
-  `docs/mobile/data/002-data-sources.md` already specifies.
-- **Only an explicit rejection signs the user out.** A `400` or `401` from that call is the server
-  answering and refusing the session: local storage is cleared and `LoggedOut` is published
-  (FR-012). Anything that is *not* an answer about the session — no network, a timeout, a `5xx`,
-  or a `429` — MUST leave the stored session untouched and surface to the caller as an ordinary
-  failure to be retried later (FR-012, SC-014). Two cases deserve naming because getting them
-  wrong is silent: a transport failure would otherwise eject a user for riding a lift, and a `429`
-  is an answer about the caller's address rather than about the session (FR-027).
+- `getAccessToken(rejectedAccessToken = <token>)` rotates: it serializes concurrent callers with a
+  mutex, returns a newer token immediately if one arrived while waiting, and calls
+  `POST /v1/auth/refresh` otherwise.
+- **Only an explicit rejection signs the user out**: `ApiError.Rejected` or `ApiError.Unauthorized`
+  clears storage and publishes `LoggedOut` (FR-025). `ApiError.Unavailable` — no network, a
+  timeout, a `5xx`, a `429` — leaves the stored session untouched (SC-014). `ApiError.Malformed`
+  likewise: an undecodable success is not an answer about the session.
 - Koin ordering matters: `AccessTokenProvider` must be declared before `NetworkClient` is first
   resolved, so `appModules` lists `featureAuthModule()` ahead of `coreNetworkModule()`.
 
-**Rationale**: The seam exists and is documented; the auth feature is its only possible owner.
-Repositories and data sources therefore never implement refresh or 401 retry. Concentrating the
-sign-out decision here is also what makes FR-012's "unreachable is not invalid" rule provable in
-one place instead of at every call site.
+**Rationale**: concentrating the sign-out decision here is what makes FR-025's "unreachable is not
+invalid" rule provable in one place instead of at every call site.
 
 ## R5. Verifying the Google ID token on the server
 
-**Decision**: `GoogleIdentityVerifier` in `services/server/feature-auth/identity`, built on
-`com.auth0:java-jwt` (already in the catalog) plus `com.auth0:jwks-rsa` for the key set.
+**Decision**: `GoogleIdentityVerifier` in `services/server/feature-auth/identity`, on
+`com.auth0:java-jwt` plus `com.auth0:jwks-rsa`.
 
-- Fetch keys from `https://www.googleapis.com/oauth2/v3/certs` through a `JwkProvider` with
-  caching and rate limiting; do not fetch per request.
-- Verify: RS256 signature against the matching `kid`; `iss` is `accounts.google.com` or
-  `https://accounts.google.com`; `aud` is one of the configured client IDs; `exp` is in the
-  future; `nonce` equals the nonce the client submitted alongside the token.
-- Read `sub` as the stable provider account identifier, and `email`, `name`, and `picture` only
-  as non-authoritative profile data (FR-026). Any of those three may be absent and is stored as
-  null. `sub` may not: a token that verifies but carries no `sub` is rejected exactly like an
-  unverifiable one, because it cannot be matched on a later login and would silently hand the
-  user a fresh account with no progress (FR-026, FR-007).
-- The `GoogleAuthConfig` **type** belongs to `feature-auth`, not `core-config` — `AuthConfig`'s own
-  KDoc already says provider-specific settings stay in the feature that consumes them. Reading the
-  three values is a different job and stays with `core-config`: the constitution fixes it as the
-  owner of environment loading and validation, and `AppConfigLoader` is the only thing that reads
-  the `.env` file `quickstart.md` documents. So `AppConfigLoader` loads
-  `GOOGLE_WEB_CLIENT_ID`, `GOOGLE_ANDROID_CLIENT_ID`, and `GOOGLE_IOS_CLIENT_ID`, and `app` passes
-  them into the feature's `GoogleAuthConfig`. Loading in `app` would bypass `.env` entirely and
-  silently break the documented setup.
+- Keys from `https://www.googleapis.com/oauth2/v3/certs` through a caching, rate-limited
+  `JwkProvider`; never fetched per request.
+- Verify RS256 against the matching `kid`; `iss` is `accounts.google.com` or its https form; `aud`
+  is one of the configured client IDs; `exp` is in the future; `nonce` equals the submitted one.
+- Read `sub` as the stable identifier, and `email`, `name`, `picture` as non-authoritative profile
+  data (FR-021) — any may be absent and is stored as null. `sub` may not: a token that verifies
+  without it is refused exactly like an unverifiable one, because it cannot be matched on a later
+  login (FR-019).
+- The `GoogleAuthConfig` **type** belongs to `feature-auth`; reading the three client IDs stays with
+  `core-config`, the constitution's owner of environment loading.
 
-**Rationale**: FR-031 requires the server to establish for itself that a confirmation is genuine
-rather than trusting what the app sends — a request can reach `/v1/auth/google` without passing
-through the app at all, so a client-side check would protect nobody. Verifying the signature
-locally against Google's published keys is the documented way to do that, and it avoids a network
-round trip to the `tokeninfo` endpoint on every login, which is rate-limited and adds a
-dependency on Google being reachable synchronously inside our request. No account is created or
-resolved and no session is issued before verification succeeds (FR-031).
+**Rationale**: FR-017 requires the server to establish genuineness for itself — a request can reach
+the endpoint without passing through the app. Local signature verification avoids a round trip to
+`tokeninfo` on every login.
 
-**Alternatives considered**: `google-api-client`'s `GoogleIdTokenVerifier` — it does the same job
-but drags in a large transitive tree for one class, and java-jwt is already a dependency.
-
-**On the nonce**: the client generates it, so an attacker who controls the client controls both
-halves. It is defense in depth, not a challenge-response. `TokenService.createChallenge` in
-`core-security` is the upgrade path if a server-issued challenge is later required; it is not
-wired in this feature.
+**On the nonce**: the client generates it, so it is defense in depth rather than challenge-response.
+`TokenService.createChallenge` in `core-security` is the upgrade path if the threat model demands
+one.
 
 ## R6. Account resolution and session persistence on the server
 
-**Decision**: three tables owned by `services/server/feature-auth`, with a forward-only Flyway
-migration under its own `src/main/resources/db/migration`. See [data-model.md](data-model.md).
+**Decision**: three tables owned by `services/server/feature-auth` with a forward-only Flyway
+migration — see [data-model.md](data-model.md).
 
-- `provider_identities` carries a unique constraint on `(provider, provider_user_id)`. That
-  constraint — not application code — is what makes FR-007 (one provider account resolves to one
-  Yap account) hold under concurrent first logins.
-- FR-026 stores the provider's email, display name, and avatar URL on `provider_identities`,
-  refreshed on each login, all nullable, with no unique constraint and no index. FR-008
-  (providers never linked automatically) is satisfied by never querying on them: two providers
-  reporting the same address produce two rows and two users, by construction. The absence of an
-  index is deliberate — it removes the temptation to add the lookup that would break FR-008.
-- These three come from the ID token's `email`, `name`, and `picture` claims, which
-  `GetSignInWithGoogleOption` and the iOS SDK both return. They are read from the already-verified
-  token, so no extra call to Google's userinfo endpoint is needed.
-- Refresh tokens are stored only as SHA-256 hashes via the existing `TokenService.hash`.
-- Rotation replaces the stored hash inside the same transaction that validates the old one, so
-  two concurrent rotations cannot both succeed. The same statement pushes `expires_at` forward
-  by `REFRESH_TOKEN_TTL_SECONDS`, which is what makes FR-025's 90-day window sliding. The
-  existing `REFRESH_TOKEN_TTL_SECONDS` default of 2 592 000 seconds is 30 days, so this feature
-  raises it to 7 776 000 for the configuration to match the product decision.
-- **A successful rotation is the only thing that renews a session** (FR-025). `expires_at` is
-  written here and nowhere else, and the client copies back whatever the server states rather
-  than advancing its own stored copy. So a user who opens the app for 90 days without ever
-  reaching the server keeps a session that quietly ages out — which is what the spec chose, and
-  the reason the device is never allowed to move the date itself.
+- `unique (provider, provider_user_id)` — not application code — is what makes FR-019 hold under
+  concurrent first logins.
+- Descriptive fields are nullable, unindexed, and never queried, which is the mechanism behind
+  FR-020. They come from the already-verified token, so no userinfo call is needed.
+- Refresh tokens are stored only as SHA-256 hashes via `TokenService.hash`.
+- Rotation replaces the stored hash inside the transaction that validates the old one and pushes
+  `expires_at` forward by `REFRESH_TOKEN_TTL_SECONDS`, raised from 30 to **90 days**. **A successful
+  rotation is the only thing that renews a session** (FR-026).
 
-**Rationale**: `docs/server/002-persistence.md` puts a feature's tables and migrations in the
-feature. `docs/testing/003-backend-integration.md` requires the uniqueness constraint, the
-rotation race, and the migration bootstrap to be proven against real PostgreSQL — those are the
-Testcontainers tests.
-
-**PostgreSQL version**: pinned to **17** in both the Testcontainers image and the deployment
-notes. `docs/testing/003` requires the same major in both and forbids `latest`; this feature is
-the first to introduce either, so it owns the choice.
+**Testing**: `docs/testing/003-backend-integration.md` requires the uniqueness constraint, the
+rotation race, and the migration bootstrap to be proven against real PostgreSQL, pinned to **17** in
+both the Testcontainers image and the deployment notes.
 
 ## R7. Reduced motion and platform detection
 
-**Decision**: two platform capability ports in `core-common`, consumed by `LoginUiStateMapper`.
+**Decision**: two platform capability ports in `core-common`. `Platform` — `ANDROID` or `IOS`, from
+an `expect fun currentPlatform()` — feeds the roster, not the UI (FR-004).
+`MotionPreferences.isReduced()` reads `Settings.Global.ANIMATOR_DURATION_SCALE == 0f` on Android and
+`UIAccessibility.isReduceMotionEnabled` on iOS (FR-045).
 
-- `Platform` — `ANDROID` or `IOS`, resolved by an `expect fun currentPlatform()` pair and bound by
-  the platform entry point. Drives FR-003: Apple is absent from the provider list on Android.
-- `MotionPreferences.isReduced()` — Android reads `Settings.Global.ANIMATOR_DURATION_SCALE == 0f`;
-  iOS reads `UIAccessibility.isReduceMotionEnabled`. Drives FR-020.
+`MotionPreferences` is a contract in `commonMain` with a narrow adapter per platform, not an
+`expect class`: the Android reading needs a `Context` and the iOS one does not, and R10 puts
+FR-045's proof at the mapper boundary, which requires handing the mapper a chosen answer. The same
+reasoning makes `SessionStorage`'s `expect`/`actual` the factory rather than the type.
 
-`MotionPreferences` is a **contract in `commonMain` with a narrow adapter in each platform source
-set**, not an `expect class`. Two reasons, both load-bearing: the Android reading needs a `Context`
-while the iOS one needs none, so the two would have different constructors; and R10 puts FR-020's
-proof at the mapper boundary, which requires a test to hand the mapper a chosen answer — an
-`expect class` cannot be stood in for. The same reasoning applies to `SessionStorage` in R3, whose
-`expect`/`actual` pair is the factory `createSessionStorage()` rather than the type itself.
-
-**Rationale**: `docs/mobile/presentation/002-ui-compose.md` names "platform capabilities" as a
-mapper input and requires availability and visibility to be decided in the mapper, not in a
-composable `when`. Putting both facts in `UiState` makes FR-003 and FR-020 provable by a mapper
-test rather than by a screenshot test.
-
-**Alternatives considered**: reading the preference inside the composable — rejected because it
-puts a product decision in Compose and makes the requirement untestable at the mapper boundary.
+`MotionPreferences` deliberately does **not** reach the selection slice: the sheet keeps the
+platform's standard animation (R24).
 
 ## R8. Navigation after login
 
-**Decision**: conditional navigation owned by `app-root`. It observes `ObserveAuthStateUseCase`
-from `feature-auth/api` and holds either `AuthNavKey.Login` or `RootNavKey.Main` as the back
-stack root. `LoginViewModel` never navigates.
+**Decision**: conditional navigation owned by `app-root`. `RootBackStack` observes
+`ObserveAuthSessionStateUseCase` and holds either `AuthNavKey.Login` or `RootNavKey.Main` as the
+back stack **base**. No view model pushes a post-login destination.
 
-Each root is composed by the module that owns it: `featureAuthModule()` registers
-`navigation<AuthNavKey.Login> { LoginScreen() }` and `appRootModule()` registers
-`navigation<RootNavKey.Main> { MainPlaceholderScreen() }`, so `koinEntryProvider()` can resolve
-both. The scaffolded `RootNavKey.Auth` is deleted: a feature owns its own destinations, and a key
-that no module composes fails at first navigation rather than at build time.
+Each root is composed by the module that owns it — `featureAuthModule()` registers the auth
+destinations, `appRootModule()` registers `RootNavKey.Main` — so `koinEntryProvider()` resolves
+both.
 
-**Rationale**: `feature-auth` cannot reference a main-screen key that no feature owns yet, and
-`app-root` is the only module that sees both. This is the conditional-navigation pattern the
-`navigation-3` skill documents, it satisfies the constitution's "a view model reports navigation
-intent rather than navigating itself", and it makes FR-012 (invalid session returns to login)
-fall out of the same observation rather than needing separate handling.
-
-**Alternatives considered**: having `LoginViewModel` push a main-screen key — impossible without
-a dependency the module graph forbids, and it would leave FR-012 unimplemented.
+**Rationale**: `feature-auth` cannot reference a main-screen key no feature owns yet, and `app-root`
+is the only module that sees both. FR-025 falls out of the same observation rather than needing
+separate handling. R22 extends the base with a mutable tail.
 
 ## R9. Screen composition
 
-**Decision**: one `LoginViewModel` with a nested `UiState`, `News`, and `Event`, one
-`LoginUiStateMapper`, and a `LoginScreen` composable in
-`feature-auth/impl/presentation/login`.
+**Decision**: one `LoginViewModel` with nested `DataState`, `UiState`, `News`, `Event`, a
+`LoginUiStateMapper`, a `LoginNewsMapper`, and the screen's composables in `presentation/login/ui`.
 
-- Provider-sheet visibility is repeatable screen state and lives in `UiState`; the transient
-  message is one-shot and travels as `News.ShowMessage`, per the UI guide's split.
-- The sheet is Material3 `ModalBottomSheet`; dismissal is an `Event`, never an error (FR-016).
+- The transient message is one-shot and travels as `News.ShowMessage`.
 - Marquee, rolling topic, spinner, and press feedback are Compose-owned animation, gated by
   `UiState.isMotionReduced`.
-- Copy lives in the feature's own `composeResources`; `UiState` carries `StringResource`
-  references, never resolved strings.
-- The legal line (FR-028) sits below the caption. Its two links open through Compose's
-  `LocalUriHandler`, which exists in `commonMain`, so no new platform port is needed. The
-  destination addresses are injected as module-function parameters alongside the base URL rather
-  than hard-coded, since they are supplied later — the same rule the DI guide applies to all
-  configuration.
-- `core-design` gains nothing in this feature. `YapTypography` already matches the design's type
-  ramp; the design's specific palette is applied through the feature's own colours until a second
-  screen needs them, at which point they move to `YapTheme`.
+- Copy lives in the feature's `composeResources`; `UiState` carries `StringResource` references,
+  never resolved strings.
+- The legal line (FR-051) sits below the caption; its links open through `LocalUriHandler`, which
+  exists in `commonMain`, so no platform port is needed. The two destinations arrive as
+  `featureAuthModule(...)` parameters and reach the screen through `GetLegalLinksUseCase`.
 - The screen is a three-part split, not one stacked column: the tilted band at the top, the action
-  block at the bottom, and the hero centred in what is left. It is built as a scrolling column with
-  a minimum height of one viewport and `SpaceBetween`, so the split holds at ordinary sizes and
-  gives way to scrolling at 320 dp and 200% font scale. Hero, topic, and body are start-aligned;
-  only the caption and the legal line are centred. Below 340 dp the two display sizes and the
-  horizontal padding step down, matching the design's own container query.
-- FR-019 says "following the colour roles defined in the design", and the design lives outside the
-  repository. T076 therefore records the resolved role→value table for light and dark **in this
-  section**, so the requirement can be reviewed against a committed artefact instead of a tool the
-  reviewer may not be able to open.
-
-### Resolved colour roles (T076)
-
-Lifted from the design prototype's `themeVals()` (`screen_login.dc.html`) and implemented in
-`feature-auth/impl/presentation/login/LoginColors.kt`.
-
-| Role | Light | Dark | Used by |
-| --- | --- | --- | --- |
-| `background` | `#FFFEF7` | `#08070A` | screen ground; also the platform splash colour |
-| `onBackground` | `#0B0A0D` | `#FAF9F6` | hero heading |
-| `marqueeBackground` | `#D9FF57` | `#D9FF57` | scrolling promotional band |
-| `onMarquee` | `#0B0A0D` | `#0B0A0D` | band text |
-| `accent` | `#5E3689` | `#D9FF57` | rotating topic word, provider marks |
-| `actionBackground` | `#0B0A0D` | `#D9FF57` | primary action |
-| `onAction` | `#FFFAFC` | `#0B0A0D` | primary action label and its progress indicator |
-| `muted` | `#5F5A6B` | `#8F8899` | body copy, legal line prose |
-| `caption` | `#8B8496` | `#5B5765` | the caption under the primary action |
-| `link` | `#0B0A0D` | `#FAF9F6` | the legal line's two links |
-| `surface` | `#FFFEF7` | `#15141A` | provider sheet container |
-| `onSurface` | `#0B0A0D` | `#FAF9F6` | provider sheet title and rows |
-| `sheetLabel` | `#8B8496` | `#7C7787` | provider sheet heading |
-| `bannerBackground` | `#5E3689` | `#26232C` | the transient message |
-| `onBanner` | `#FFFAFC` | `#FAF9F6` | transient message text |
-
-The band keeps one pair in both themes: in the design it is a printed sticker over the screen, not a
-surface that follows it. The accent splits from the action colour in light, where the topic word is
-purple and the button is near-black.
-
-`link` is the only role with no counterpart in the prototype — the design carries no legal line
-(FR-028) — so it follows `onBackground`, and the line's prose reuses `muted`.
-
-**Rationale**: These are the choices `docs/mobile/presentation/001-view-models.md` and
-`002-ui-compose.md` already fix. The one judgement call is leaving colour in the feature: the UI
-guide says a composable moves to `core-design` only when it has a stable API and a real consumer,
-and the same reasoning applies to tokens.
+  block at the bottom, the hero in what is left. It is a scrolling column with a minimum height of
+  one viewport and `SpaceBetween`, so the split holds at ordinary sizes and gives way to scrolling
+  at 320 dp and 200% font scale. Below 340 dp the two display sizes and the horizontal padding step
+  down, matching the design's own container query.
 
 ## R10. Verification strategy
 
-| Behavior | Where it is proven |
+| Behaviour | Where it is proven |
 | --- | --- |
-| Provider list contents per platform, availability, reduced motion, loading state | `LoginUiStateMapper` tests — the primary surface |
-| Event → state, event → news, duplicate-tap guard, cancellation silence, cleanup | `LoginViewModel` tests through `runViewModelTest` |
-| Session cache reuse, forced refresh, concurrent refresh | Auth repository tests with data-source and storage stubs |
-| Refresh `401`/`400` signs out; no network, timeout, `5xx`, and `429` all leave the session stored and logged in (SC-014) | `AccessTokenProvider` tests, one case per outcome, over a stubbed data source |
-| ID token → session mapping, HTTP failure translation | Remote data source and mapper tests |
-| Koin graph completeness | `verify()` test in the module that owns each graph |
-| Google token verification: bad signature, wrong `aud`, wrong `iss`, expired, nonce mismatch, absent `sub` — none creates a user, an identity, or a session (FR-031, SC-015) | `GoogleIdentityVerifier` tests with locally signed tokens, plus a route test asserting no rows are written |
-| Fallback triggers on a missing provider but never on a cancellation | `AndroidGoogleCredentialProvider` tests over a stubbed Credential Manager |
-| Code exchange: success, replayed code, verifier mismatch, Google unreachable | Exchange-adapter tests against a stubbed token endpoint |
-| Route parsing, serialization, and the `AuthFailure` each route raises | Ktor `testApplication` route tests inside `feature-auth` |
-| `AuthFailure` → `400`/`401`/`503`, and `429` over the limit on all three unauthenticated endpoints | `app`'s own tests — both the `StatusPages` mapping and the limiter live there, and no feature may depend on `app` |
-| Auth state stays `Unknown` until storage is read, then resolves once | Root auth-state test; the absence of a visible flash is checked by hand |
-| Renewal fires only when the stored access token is expired or within five minutes of expiring (FR-032) | `RenewSessionUseCase` tests over stubbed storage and a stubbed `AccessTokenProvider` |
-| Launch renewal runs once per launch, only after the local decision, and never delays the main screen (FR-032) | Root/launch-renewal test over a stubbed `RenewSessionUseCase` |
-| An attempt unresolved after 60 seconds ends as a cancellation, silently (FR-013, SC-007) | `LoginWithGoogleUseCase` test on virtual time |
-| Unique provider identity under concurrent first login, refresh-token rotation race, sliding `expires_at`, expired-session rejection, migration bootstrap | Testcontainers PostgreSQL 17 integration tests |
-| Email stored and refreshed but never used to match an account | Repository test asserting a second provider with the same address yields a second user |
-| Rendering, content order, semantics, light/dark, narrow width, large font scale, the four-second banner (FR-023) | Compose UI tests — only for what a mapper test cannot prove, and each written before the composable it covers |
+| Which providers exist, their visibility and selectability per platform | Roster use-case tests |
+| Provider rows, marks, `isMonochrome`, hidden providers dropped | Selection mapper tests |
+| Reduced motion and loading state | `LoginUiStateMapper` tests |
+| Outcome → message | `LoginNewsMapper` tests |
+| Event → state, duplicate-tap guard, cancellation silence, navigation intent | View-model tests through `runViewModelTest` |
+| Registry lookup, the unavailable outcome, the 60-second bound | `DefaultLoginUseCase` tests on virtual time |
+| Session resolution once, refresh margin, login outcome mapping | `DefaultAuthSessionRepository` / `DefaultGoogleAuthRepository` tests over stubs |
+| Rotation, concurrent rotation, and which failures sign the user out | `DefaultAccessTokenProviderTest`, one case per `ApiError` |
+| Status and transport → `ApiResult`, bearer attachment, base-url joining | `ApiClientTest` over `ktor-client-mock` |
+| Session DTO → local → domain, including the `sub` claim decode | `SessionMapperTest` |
+| Koin graph completeness, every selectable provider resolving a handler | `verify()` plus real resolution in the module that owns each graph |
+| Google verification: bad signature, wrong `aud`/`iss`, expired, nonce mismatch, absent `sub` — none creates a row | `GoogleIdentityVerifier` tests plus a route test asserting no rows are written |
+| Fallback triggers on a missing provider, never on a cancellation | `AndroidGoogleCredentialProvider` tests over a stubbed Credential Manager |
+| Route parsing, serialization, and the `AuthFailure` each route raises | Ktor `testApplication` inside `feature-auth` |
+| `AuthFailure` → `400`/`401`/`503`, and `429` over the limit | `app`'s own tests — no feature may depend on `app` |
+| Session state stays `Unknown` until storage is read, then resolves once | `SessionStore`/repository tests; the absence of a visible flash is checked by hand |
+| The launch refresh runs once, only after the local decision | `LaunchSessionRefreshTest` over stubs |
+| Back stack: push, pop, tail reset on base change, no duplicate top | `RootBackStackTest` |
+| Unique identity under concurrent first login, rotation race, sliding `expires_at`, migration bootstrap | Testcontainers PostgreSQL 17 |
+| Rendering, content order, semantics, themes, narrow width, large font scale, snackbar timing and motion | Compose UI tests — only for what a mapper test cannot prove |
 
-**Rationale**: `docs/testing/001-structure.md` requires each behavior to be tested once at the
-boundary that owns it, and `docs/testing/003` forbids substituting a fake for PostgreSQL
-semantics.
+**Rationale**: `docs/testing/001-structure.md` requires each behaviour to be tested once at the
+boundary that owns it, and `docs/testing/003` forbids substituting a fake for PostgreSQL semantics.
 
-## R11. New dependencies to add to `gradle/libs.versions.toml`
+## R11. New dependencies
 
 | Coordinate | Used by | Why |
 | --- | --- | --- |
-| `androidx.credentials:credentials`, `:credentials-play-services-auth` | `feature-auth/impl` `androidMain` | Credential Manager (R1) |
-| `com.google.android.libraries.identity.googleid:googleid` | `feature-auth/impl` `androidMain` | `GetSignInWithGoogleOption`, `GoogleIdTokenCredential` (R1) |
-| `net.openid:appauth` | `feature-auth/impl` `androidMain` | PKCE + Custom Tabs browser fallback (R14) |
-| `androidx.datastore:datastore-preferences` | `feature-auth/impl` `androidMain` | Encrypted session container (R3) |
+| `androidx.credentials:credentials`, `:credentials-play-services-auth` | `feature-auth/impl` androidMain | Credential Manager (R1) |
+| `com.google.android.libraries.identity.googleid:googleid` | `feature-auth/impl` androidMain | the sign-in option and credential type (R1) |
+| `net.openid:appauth` | `feature-auth/impl` androidMain | PKCE + Custom Tabs fallback (R14) |
+| `androidx.datastore:datastore-preferences` | `feature-auth/impl` androidMain | encrypted session container (R3) |
 | `com.auth0:jwks-rsa` | `services/server/feature-auth` | Google JWKS with caching (R5) |
-| `androidx.core:core-splashscreen` | `apps/mobile/android-app` | System splash held until auth state resolves (R12) |
-| `io.ktor:ktor-server-status-pages` | `services/server/app` | Shared failure-to-status mapping the server guide requires |
-| `io.ktor:ktor-server-rate-limit` | `services/server/app` | Per-IP limiting on the auth endpoints (R13) |
-| `io.ktor:ktor-server-test-host` | server tests | Route tests (R10) |
-| `org.testcontainers:postgresql` | server tests | PostgreSQL 17 integration tests (R6, R10) |
+| `androidx.core:core-splashscreen` | `apps/mobile/android-app` | splash held until session state resolves (R12) |
+| `io.ktor:ktor-server-status-pages`, `:ktor-server-rate-limit` | `services/server/app` | failure mapping and per-IP limiting (R13) |
+| `io.ktor:ktor-client-mock` | `core-network` tests | `ApiClient` behaviour without a server |
+| `io.ktor:ktor-server-test-host`, `org.testcontainers:postgresql` | server tests | routes and PostgreSQL integration |
 
-Resolve each to the newest stable release at implementation time and then **pin that exact
-version in `gradle/libs.versions.toml`** — no dynamic ranges, no `+`, and no alpha unless nothing
-stable exists for the coordinate. The `1.7.0-alpha03` named in R1 is what the current Android
-guide happens to show, not a pin. GoogleSignIn for iOS is added in Xcode through Swift Package
-Manager and never appears in the version catalog.
+Each is pinned exactly in `gradle/libs.versions.toml` — no ranges, no `+`, no alpha unless nothing
+stable exists. The one deliberate exception is Navigation 3 (R19). GoogleSignIn for iOS is added in
+Xcode and never appears in the catalogue.
 
-## R14. Browser fallback for devices without Google's services
+## R12. Holding the launch screen until session state is known
 
-**Decision**: OAuth 2.0 authorization code flow with PKCE, presented in **Chrome Custom Tabs**
-via `net.openid:appauth`, used on Android when and only when Credential Manager reports that no
-provider exists (FR-029).
+**Decision**: each platform's own splash mechanism, kept up until the first non-`Unknown`
+`AuthSessionState` (FR-002). Android uses `androidx.core:core-splashscreen` with a keep-on-screen
+condition installed before `setContent`; iOS uses the storyboard launch screen, with `App()`
+composing no `NavDisplay` while the back stack is empty.
 
-- AppAuth generates the `code_verifier`/`code_challenge` pair, launches the Custom Tab, and
-  catches the redirect. It is the reference implementation of RFC 8252 and saves hand-rolling
-  state validation and redirect handling.
-- Redirect URI is the reversed client ID scheme —
-  `com.googleusercontent.apps.<id>:/oauth2redirect` — registered as an intent filter on a
-  dedicated activity in `android-app`.
-- The client never exchanges the code. It hands `code` + `code_verifier` + `redirect_uri` to
-  `POST /v1/auth/google/code`, and the server performs the exchange. Installed-app clients have
-  no secret, so PKCE is the whole proof — which is why the verifier is required, not optional.
-- Scopes: `openid email profile`, matching the claims FR-026 stores.
+`AuthSessionState` therefore starts as `Unknown`, not `LoggedOut`: the latter would push the login
+screen and then replace it, which is exactly the flash FR-002 forbids.
 
-**Why not a WebView**: Google returns `disallowed_useragent` for OAuth inside embedded web views
-and has done since 2016. This is policy, not a bug, and it cannot be worked around by spoofing a
-user agent without violating Google's terms. An embedded view also breaks the security property
-that makes this flow safe — the user cannot see the address bar and verify they are typing their
-password into Google. FR-029 therefore forbids it outright rather than leaving it as a fallback
-of the fallback.
-
-**Why iOS needs nothing**: the GoogleSignIn SDK already presents
-`ASWebAuthenticationSession`, which is the system browser under Apple's rules, and it does not
-require Google Play services. iOS has no equivalent gap, so it keeps one path.
-
-**Rationale**: A de-Googled device — GrapheneOS without sandboxed Play, or any build shipped
-without Google's services — has no credential provider at all. Since Google is the only working
-provider in this feature, such a device would otherwise be locked out of the product entirely, with
-nothing the user could do about it. The browser flow removes that dead end for the cost of one
-adapter and one endpoint.
-
-**Alternatives considered**: hand-rolling PKCE over `androidx.browser` — feasible, but AppAuth
-already handles the redirect race and state validation that are easy to get subtly wrong.
-Making the browser flow the only path on both platforms — rejected because it costs every user
-the native account sheet the design's own "ВХОД ЗА 1 ТАП" promise depends on.
-
-**Known limitation**: a device with no Google provider *and* no browser capable of handling the
-intent cannot log in. That is a genuine dead end, reported through the ordinary failure path
-(FR-014); T-ID is what eventually removes it, not more fallbacks.
-
-## R12. Holding the launch screen until auth state is known
-
-**Decision**: use each platform's own splash mechanism and keep it up until the first `AuthState`
-arrives (FR-024).
-
-- **Android**: `androidx.core:core-splashscreen`, with
-  `splashScreen.setKeepOnScreenCondition { authState == null }` installed in `MainActivity`
-  before `setContent`.
-- **iOS**: the storyboard launch screen the Xcode host already reserves a colour set for
-  (`YapApp/Assets.xcassets/SplashBackground.colorset`), with the Compose root rendering nothing
-  until the state resolves.
-- `AuthState` therefore starts as **unknown**, not as `LoggedOut`. This is the whole point: if the
-  initial value were `LoggedOut`, `app-root` would put the login screen on the back stack and then
-  replace it, which is exactly the flash FR-024 forbids.
-
-**Rationale**: The system splash is already on screen during process start, so extending it costs
-one call and no new screen. Reading Keystore-decrypted DataStore or the Keychain is fast but not
-instant, and it is disk I/O on a cold start, so the gap is real rather than theoretical.
-
-**Alternatives considered**: an in-app splash composable, as the design prototype's unused
-`splash` phase suggests — rejected because it would appear *after* the system splash, adding a
-second flash rather than removing one. Blocking the main thread on the storage read — rejected
-outright.
-
-**Verification**: the tri-state is provable by a view-model or root-state test; the absence of a
-visible flash is confirmed by hand on both platforms, since it is a timing property no unit test
-observes.
+**Alternatives**: an in-app splash composable — it would appear *after* the system splash, adding a
+second flash. Blocking the main thread on the storage read — rejected outright.
 
 ## R13. Rate limiting the auth endpoints
 
-**Decision**: Ktor's `RateLimit` plugin in `services/server/app`, applied per originating IP to
-every unauthenticated endpoint — `POST /v1/auth/google`, `POST /v1/auth/google/code`, and
-`POST /v1/auth/refresh` (FR-027).
+**Decision**: Ktor's `RateLimit` plugin in `services/server/app`, applied per originating IP to all
+three unauthenticated endpoints, at **100 requests per minute**, read from
+`AUTH_RATE_LIMIT_REQUESTS_PER_MINUTE`.
 
-- **The threshold is 100 requests per minute per IP**, read from
-  `AUTH_RATE_LIMIT_REQUESTS_PER_MINUTE` with 100 as the default, so it can be retuned by
-  configuration rather than by a release.
-- All three doors are limited, not two. Every one of them is unauthenticated, which is exactly
-  the condition FR-027 names; leaving `/v1/auth/google/code` open would put the whole limit behind
-  a door an attacker can simply walk around.
-- The client IP comes from Ktor's `ApplicationRequest.origin`, which honours forwarded headers
-  when the already-present `TRUST_PROXY_HEADERS` setting is on. Behind a proxy with that flag
-  off, every request would appear to come from the proxy and the limit would throttle everyone —
-  so the deployment note is that the flag must be true wherever a proxy terminates TLS.
-- Why 100 a minute clears both bars in SC-010: a person retrying after cancellations makes a
-  handful of attempts a minute at most, and a shared office or carrier address pools devices that
-  each log in about once every 90 days (FR-025), so their combined arrival rate stays orders of
-  magnitude below the bucket. Automated abuse hits it immediately.
-- Over the limit returns `429 Too Many Requests`. The client renders it through the ordinary
-  failure path (FR-014) rather than a special message — the user does not need to know which
-  server rule rejected them.
-- **A `429` on `/v1/auth/refresh` must not sign the user out.** It is an answer about the
-  caller's address, not a rejection of the session, so R4's rule applies: the stored session
-  survives and the call is retried (FR-012, SC-014). Treating it as a rejection would let a noisy
-  neighbour behind the same NAT sign a user out.
+- All three doors are limited. Leaving `/v1/auth/google/code` open would put the whole limit behind
+  a door an attacker can walk around.
+- The client IP comes from `ApplicationRequest.origin`, which honours forwarded headers when
+  `TRUST_PROXY_HEADERS` is on. Behind a proxy with that flag off, every request appears to come from
+  the proxy and the limit throttles everyone.
+- Why 100/min clears both bars in SC-010: a person retrying makes a handful of attempts a minute,
+  and a shared address pools devices that each log in about once every 90 days. Automated abuse hits
+  it immediately.
+- **A `429` on refresh must not sign the user out** — it is an answer about the caller's address,
+  not the session, so it maps to `ApiError.Unavailable` (FR-025, SC-014).
 
-**Rationale**: These three endpoints are the only unauthenticated surface, so they are the only
-place an attacker can create accounts or force Google token verifications without credentials.
-The plugin is part of Ktor, needs no external store for a single instance, and the limit lives
-in `app` beside the other shared plugins, which is where `docs/server/001-feature-boundaries.md`
-puts cross-cutting HTTP concerns.
+**Known limitations**: a shared outbound IP pools many real users behind one counter, which is why
+the threshold is generous; and the counter is per instance, so a second server doubles the effective
+limit.
 
-**Alternatives considered**: per-account or per-session counters — rejected as premature; they
-need persisted state and cleanup for a threat that per-IP limiting already blunts. Leaving it to
-a gateway or WAF — rejected because no such layer exists yet, so the server would ship open.
+## R14. Browser fallback for devices without Google's services
 
-**Known limitation to record**: a shared outbound IP (office NAT, carrier NAT) pools many real
-users behind one counter, which is why the threshold is generous rather than tight. If that
-proves too coarse, the upgrade is a distributed limiter keyed on IP plus device, not a lower
-threshold. The counter is also per instance, since the plugin keeps it in memory — a second
-server instance doubles the effective limit. That is acceptable for a coarse abuse guard and is
-the second reason the number is not treated as a precise control.
+**Decision**: OAuth 2.0 authorization code flow with PKCE in **Chrome Custom Tabs** via
+`net.openid:appauth`, used on Android when and only when Credential Manager reports that no provider
+exists (FR-016).
 
-**Where it is tested**: the plugin lives in `app`, and neither `feature-auth` nor any `core-*`
-module may depend on `app`, so a `testApplication` in `feature-auth` assembles the routes *without*
-the limiter and can never observe a `429`. The limit is therefore proven in `app`'s own tests —
-once against a probe route for the threshold and the per-IP key, and once across all three auth
-doors to prove each really sits inside the limited scope. The same argument covers the status
-codes: the `AuthFailure` → `400`/`401`/`503` mapping is a `StatusPages` plugin in `app` too, so a
-feature route test cannot observe it either. The feature's route tests therefore assert the failure
-a route **raises**, and every status code it eventually becomes — `429` included — is proven in
-`app`'s own tests.
+- AppAuth generates the verifier/challenge pair, launches the tab, and catches the redirect — it is
+  the reference implementation of RFC 8252.
+- Redirect URI is the reversed client ID scheme, registered as an intent filter in `android-app`.
+- The client never exchanges the code; it hands `code` + `codeVerifier` + `redirectUri` to
+  `POST /v1/auth/google/code`. Installed-app clients have no secret, so PKCE is the whole proof.
+- Scopes: `openid email profile`, matching the claims FR-021 stores.
 
-## R15. Renewing the session at launch
+**Why not a WebView**: Google returns `disallowed_useragent` for OAuth inside embedded web views,
+and an embedded view breaks the property that makes the flow safe — the user cannot see the address
+bar. FR-016 forbids it outright.
 
-**Decision**: `app-root` fires a session renewal after auth state has resolved to logged-in, by
-calling `RenewSessionUseCase` — a contract in `feature-auth/api`. The use case renews when the
-stored access token has expired or is **within five minutes** of expiring, and calls the
-`AccessTokenProvider` seam of R4, which already owns refresh and the sign-out decision — no new
-endpoint, no new DTO, and no new failure handling.
+**Why iOS needs nothing**: the GoogleSignIn SDK already presents `ASWebAuthenticationSession`.
 
-- The condition lives in the **use case, not in `app-root`**. Both expiry fields sit in
-  `SessionLocal`, which is `internal` to `impl`; a decision made in `app-root` would either widen
-  that visibility — against Principle I — or degrade into an unconditional renewal on every launch.
-  `app-root` therefore owns only the trigger, which is the one fact it can already see: auth state
-  has resolved to logged-in, so renew once.
-- **Five minutes** against the repository's 900-second `ACCESS_TOKEN_TTL_SECONDS` default is a
-  third of the window: far enough out that a slow launch on a poor connection still finishes the
-  rotation before the token dies, near enough that a healthy token is left alone.
-- It runs **after** the launch decision, never before it. FR-011 forbids a request before the app
-  decides where to land, and an offline launch must still reach the main screen; the renewal is a
-  background effect of already being logged in, not a gate on it.
-- It is **conditional**, not unconditional: a stored access token more than five minutes from
-  expiry means no call, so opening the app ten times an hour costs one renewal at most, not ten.
-- Its three outcomes are the ones R4 already fixes: `200` rotates and pushes `expires_at` another
-  90 days out (FR-025), `400`/`401` clears storage and publishes `LoggedOut` (FR-012, and this is
-  how a device superseded by a second-device login finds out — FR-030), and no network, a
-  timeout, a `5xx`, or a `429` leaves the stored session exactly as it was (SC-014).
+**Known limitation**: a device with no Google provider *and* no capable browser cannot log in. That
+is a genuine dead end, reported through the ordinary failure path (FR-030); T-ID is what eventually
+removes it, not more fallbacks.
 
-**Rationale**: every endpoint in this feature is the unauthenticated front door, so nothing else
-reaches the server once a user is logged in. Without a deliberate renewal, FR-025's sliding window
-never slides: every session would expire 90 days after login no matter how much the app was
-used, SC-009 would be false for real users, and SC-013 would describe an event that never happens.
-The cheapest honest fix is to make the launch itself the exchange, reusing the seam that already
-exists rather than inventing a heartbeat.
+## R15. Refreshing the session at launch
 
-**Alternatives considered**: a dedicated authenticated `GET /v1/auth/session` — cleaner as a
-liveness probe and the natural home for a future profile read, but it adds a DTO, a route, a
-service path, and their tests to a feature whose scope is one screen, and it buys nothing the
-refresh call does not already provide today. It becomes the better answer the moment a second
-feature needs an authenticated read; at that point this renewal simply stops being the only one.
-Renewing on every launch regardless of expiry — rejected as needless traffic and needless rotation.
-A background periodic worker — rejected: it needs platform schedulers on both sides for a problem
-one launch-time call solves.
+**Decision**: `app-root`'s `LaunchSessionRefresh` awaits the first resolved session state and, when
+it is `LoggedIn`, calls `RefreshSessionUseCase`. `DefaultAuthSessionRepository` decides whether to
+act: it refreshes when the stored access token is expired or **within five minutes** of expiring,
+and delegates the call to the `AccessTokenProvider` of R4, which already owns rotation and the
+sign-out decision — no new endpoint, no new DTO, no new failure handling.
+
+- The condition lives in `impl`, not in `app-root`: the expiry fields are `internal`, and a decision
+  made in `app-root` would either widen that visibility or degrade into an unconditional refresh on
+  every launch.
+- Five minutes against the 900-second access-token TTL is a third of the window: far enough that a
+  slow launch still finishes the rotation, near enough that a healthy token is left alone.
+- It runs **after** the launch decision, never before it — FR-024 forbids a request before the app
+  decides where to land, and an offline launch must still reach the main screen.
+- Its three outcomes are the ones R4 fixes: rotation pushes `expires_at` another 90 days out
+  (FR-026); an explicit rejection clears storage and returns the user to login (FR-025, and this is
+  how a device superseded by a second-device login finds out — FR-027); anything unreachable leaves
+  the stored session exactly as it was (SC-014).
+
+**Rationale**: every endpoint here is the unauthenticated front door, so nothing else reaches the
+server once a user is logged in. Without this, FR-026's window never slides and SC-013 describes an
+event that never happens.
+
+**Alternatives**: a dedicated authenticated `GET /v1/auth/session` — cleaner as a liveness probe,
+but it adds a DTO, a route, a service path, and their tests for what refresh already provides.
+Refreshing on every launch — needless traffic and needless rotation. A background worker — platform
+schedulers on both sides for a problem one launch-time call solves.
 
 **Consequence to state plainly**: a user who never opens the app with a network for 90 days still
-loses the session. That is what the spec chose (FR-025), and this decision does not change it.
+loses the session. That is what the spec chose.
 
 ## R16. Bounding an attempt that never returns
 
-**Decision**: `LoginWithGoogleUseCase` wraps the provider call in `withTimeoutOrNull(60.seconds)`
-and reports the expiry as `LoginOutcome.Cancelled`.
+**Decision**: `DefaultLoginUseCase` wraps the provider call in `withTimeoutOrNull(60.seconds)` and
+reports expiry as `LoginOutcome.Cancelled`.
 
-- Cancellation, not failure: SC-007 says an attempt that concludes without either a success or an
-  explicit failure resolves to the idle screen, never to a failure message. An expired attempt is
-  exactly that case, so it takes FR-013's silent path.
-- The bound sits in the use case rather than in the view model, so it holds for both platforms and
-  both Android paths at once, and so a view model test does not have to own a timer.
-- `withTimeoutOrNull` cancels the provider coroutine, which is what makes the Credential Manager
-  or AppAuth call actually stop rather than leak.
+- Cancellation, not failure: SC-007 says an attempt concluding without a success or an explicit
+  failure resolves to the idle screen.
+- The bound sits in the use case, so it holds for every provider and both Android paths at once, and
+  a view-model test does not have to own a timer.
+- `withTimeoutOrNull` cancels the provider coroutine, so the Credential Manager or AppAuth call
+  actually stops rather than leaks.
 
-**Rationale**: FR-013 forbids leaving an attempt showing progress indefinitely and SC-007 puts a
-number on it, but nothing enforced either. Process death and screen recreation happen to cover the
-"left the app and came back much later" case; they do nothing for an attempt that hangs while the
-user is watching. One timeout covers both, and virtual time makes it a fast, deterministic test.
+## R17. The shape of `AuthProvider`
 
-**Alternatives considered**: resetting state on lifecycle resume — covers only the leave-and-return
-case and leaves SC-007's 60 seconds unmeasured. Dropping the number from SC-007 — rejected: it is
-the only bound the spec puts on the screen's worst behavior.
+**Decision**: one data class carrying identity plus both facts:
+
+```kotlin
+enum class AuthProviderType { APPLE, GOOGLE, T_ID }
+
+data class AuthProvider(val type: AuthProviderType, val isEnabled: Boolean, val isVisible: Boolean)
+```
+
+**Rationale**: both facts sit on the provider, and because they are *instance* values rather than
+constants, the roster sets them per device today and a backend can set them later (FR-006).
+`Flow<List<AuthProvider>>` then reads literally. Identity is a plain enum, which is what makes the
+display table (`AuthProviderUiMapper`) an exhaustive `when` and the handler registry a map keyed by
+type rather than by class.
+
+**Alternatives**: an enum carrying the two flags, as originally asked — rejected, because a constant
+cannot be driven per device or by a backend, and `APPLE` would then appear on Android. A sealed
+hierarchy of per-provider data classes — it works, but it buys nothing over one data class plus an
+enum and forces every consumer into `is` branches and `KClass` keys.
+
+## R18. Registering a login path per provider
+
+**Decision**: a domain port carrying its own identity:
+
+```kotlin
+internal interface ProviderLogin {
+    val type: AuthProviderType
+    suspend fun login(): LoginOutcome
+}
+```
+
+Each implementation is bound by its own type and `bind ProviderLogin::class`. `DefaultLoginUseCase`
+receives them through Koin's `getAll<ProviderLogin>()` and indexes them by `type`. Adding a provider
+is one Koin declaration plus one implementation.
+
+**Rationale**: `getAll<T>()` is public Koin API — `koin-compose-navigation3` uses it to collect
+entry providers — so this is the same collection mechanism the navigation DSL relies on. The map is
+built where the handlers are declared, not in a view model.
+
+**Alternatives**: a `Map<provider, LoginUseCase>` injected into the view model — every new provider
+would edit one central `mapOf`, which is what the refactor removed. Qualified bindings resolved on
+demand — failures would surface at tap time instead of at wiring-verification time.
+
+**Guard**: a wiring test asserts that every provider the roster marks selectable resolves a handler,
+and that no two handlers claim the same type.
+
+## R19. Navigation 3 upgrade
+
+**Decision**: raise Navigation 3 so the official result API is available.
+
+| Artefact | Before | After |
+| --- | --- | --- |
+| `androidx.navigation3:navigation3-runtime` | 1.1.1 | **1.2.0-alpha04** |
+| `org.jetbrains.androidx.navigation3:navigation3-ui` | 1.1.1 | **1.2.0-alpha02** |
+
+The two versions differ on purpose: JetBrains publishes only the UI artefact, and `navigation3-ui`
+1.2.0-alpha02 declares runtime 1.2.0-alpha04. Pinning the runtime to what the UI was built against
+is more honest than letting conflict resolution pick it.
+
+**Why an alpha**: `androidx.navigation3.runtime.result` exists in no stable release. The requester
+chose the official mechanism over a hand-rolled one, and this is its cost — the one deliberate
+exception to R11.
+
+**Verified unchanged across the bump**: the runtime's file set apart from the added `result`
+package; `NavEntry.metadata` still `Map<String, Any>`; `EntryProviderScope.entry(content, metadata)`
+still present, which is what `koin-compose-navigation3` compiles against; the `NavDisplay` signature,
+`OverlayScene.onRemove()`, and `SceneStrategyScope.onBack`.
+
+**New transitive dependency**: `navigationevent-compose` for predictive back. `navigation3-ui` also
+declares lifecycle 2.10.0, which resolves up to the project's pinned 2.11.0.
+
+## R20. Returning the chosen provider
+
+**Decision**: use `androidx.navigation3.runtime.result`. No feature-owned channel, no extra use
+cases. `App()` adds `rememberResultEventBusNavEntryDecorator<NavKey>()`; the selection screen sends
+through `LocalResultEventBus.current.sendResult(...)` and then navigates back; the login screen
+receives with `ResultEffect<AuthProvider>(resultKey = …)`, which raises an ordinary `Event`.
+
+**The keying decision**: the bus keys results by type name unless an explicit `resultKey` is given,
+so both sides name one shared constant — `AuthResultKeys.PROVIDER_SELECTION` — and the send and the
+receive cannot drift apart.
+
+**Alternatives**: `ResultEventBus.conflateAsState` — a login is a one-shot action, and a conflated
+state would replay the last choice on recomposition.
+
+## R21. The selection screen as a destination
+
+**Decision**: `AuthNavKey.SelectAuthProvider` is a real destination rendered by a custom
+`BottomSheetSceneStrategy`, following `AnimatedBottomSheetSample` in the `navigation3-ui` samples.
+
+**Rationale**: Navigation 3 ships no bottom-sheet scene strategy at any version. The sample's
+`onRemove()` override is the piece that matters — it awaits `sheetState.hide()` before the entry
+leaves composition, so the sheet animates out instead of vanishing. `metadata { … }` builds a
+`Map<String, Any>`, which is exactly what Koin's `Module.navigation<T>(metadata, …)` takes, so the
+marker is attached from the feature's own module with no DSL change.
+
+**Alternatives**: keeping the sheet as a composable driven by a `UiState` flag — rejected twice
+over: the requester asked for a full destination, and `docs/mobile/presentation/002-ui-compose.md`
+forbids a sheet visibility flag in `UiState`.
+
+## R22. A mutable back stack, a `Navigator`, and the roster
+
+**Decision**: `RootBackStack` is a `single` owning a session-derived base (R8) plus a mutable tail.
+It implements the `Navigator` contract in `core-common`, bound in `app-root`. `App()` passes
+`onBack`, the scene strategies, and the decorator list to `NavDisplay`.
+
+The roster — `DefaultObserveAuthProvidersUseCase` — is a cold `Flow<List<AuthProvider>>` computed
+from `Platform` alone: Google, Apple, T-ID in display order; Apple visible on iOS only; only Google
+selectable. There is deliberately **no repository behind it yet**; the `Flow` is the seam a remote
+roster slots into, and a port with a single in-memory implementation would own no behaviour.
+
+**Rationale**: `docs/mobile/presentation/001-view-models.md` prescribes `Navigator` and forbids
+navigation through `News`, but no module provided one. This is the first feature that needs it,
+which is when the constitution allows the abstraction to appear.
+`docs/mobile/003-dependency-injection.md` requires the back stack to stay in `app-root` and never be
+passed to a feature, so the feature sees only the contract.
+
+**Alternatives**: `rememberNavBackStack` in `App()` — the base is derived from session state inside
+a Koin-owned component, and a composable-owned stack cannot be reset from there without duplicating
+that logic.
+
+**Known limitation, stated rather than hidden**: the singleton survives configuration change but not
+process death, so a sheet open at process death reopens as the login screen. Acceptable for a
+transient chooser.
+
+## R23. Colours, lifted from the design
+
+**Decision**: `core-design` owns `YapColors`, provided through `LocalYapColors`, with a Material
+`ColorScheme` derived from the same values. The login slice reads `YapTheme.colors` and declares no
+literal.
+
+| Role | Light | Dark | Design key |
+| --- | --- | --- | --- |
+| `background` / `onBackground` | `FFFEF7` / `0B0A0D` | `08070A` / `FAF9F6` | `bg` / `fg` |
+| `surface` / `onSurface` | `FFFEF7` / `0B0A0D` | `15141A` / `FAF9F6` | `sheetBg` / `providerColor` |
+| `accent` | `5E3689` | `D9FF57` | `topicColor`, also `providerHover` |
+| `action` / `onAction` | `0B0A0D` / `FFFAFC` | `D9FF57` / `0B0A0D` | `buttonBg` / `buttonFg` |
+| `bodyMuted` | `5F5A6B` | `8F8899` | `bodyColor` |
+| `caption` | `8B8496` | `5B5765` | `captionColor` |
+| `sectionLabel` | `8B8496` | `7C7787` | `sheetLabelColor` |
+| `link` | `0B0A0D` | `FAF9F6` | anchor colour |
+| `notice` / `onNotice` | `5E3689` / `FFFAFC` | **`5E3689` / `FFFAFC`** | `snackBg` / `snackFg` |
+| `highlight` / `onHighlight` | `D9FF57` / `0B0A0D` | `D9FF57` / `0B0A0D` | marquee band |
+| `outline` | `0B0A0D` at 10% | `E2E2E2` at 14% | `sheetBorder` |
+| `handle` | `0B0A0D` at 20% | `E2E2E2` at 25% | `sheetHandle` |
+| `scrim` | `3C3742` at 35% | `050406` at 55% | `sheetOverlay` |
+
+`notice` is the one role fixed across themes by requirement (FR-044, SC-018) — the design has always
+specified one snackbar colour. The band keeps one pair in both themes because it is a printed
+sticker over the screen, not a surface that follows it. `link` is the only role with no counterpart
+in the prototype, since the design carries no legal line, so it follows `onBackground`.
+
+**Rationale**: the palette does not fit Material's slot set — the primary action is near-black in
+light while `accent` is purple, the snackbar is fixed across themes, and the marquee band has no
+slot at all. Keeping `YapColors` as the source of truth and deriving the `ColorScheme` from it gives
+`ModalBottomSheet`, `Snackbar`, and `Button` correct defaults without inventing meanings for slots.
+
+## R24. Snackbar mechanism, motion, and timing
+
+**Decision**: `SnackbarHostState` owns queueing, one-at-a-time display, and dismissal; a
+feature-owned host renders it with vertical entry and upward exit.
+
+**Rationale**: `SnackbarHostState`'s mutex is a documented fair queue and `showSnackbar` suspends
+until the current message disappears. What it cannot provide is the motion: `SnackbarHost` renders
+through a private `FadeInFadeOutWithScale` carrying the upstream comment *"TODO: to be replaced with
+the public customizable implementation"*, with no parameter to change it. Owning ~25 lines of host
+is the smallest way to get the required motion while keeping the standard state machine. The screen
+therefore shows every message with `SnackbarDuration.Indefinite` and lets the host own the timer.
+
+**Values from the design**: top of the screen, 10 dp below the safe area, 20 dp side margins; 14 dp
+corner radius; 12 dp × 18 dp padding; 14 sp weight 600 centred; enter 220 ms ease-out from 8 dp
+below with fade; exit upward with fade; duration **2600 ms**.
+
+**Reduced motion**: the host swaps both transitions for `EnterTransition.None` /
+`ExitTransition.None`, so the message still displays for its full duration without motion. The
+preference governs the message only — the selection sheet keeps `ModalBottomSheet`'s standard
+animation (FR-045).
+
+## R25. Provider marks, lifted from the design
+
+**Decision**: three vector drawables in `feature-auth/impl/src/commonMain/composeResources/drawable/`,
+converted verbatim from the design's markup.
+
+| Provider | Mark | Size | Tint |
+| --- | --- | --- | --- |
+| Google | four-path multicolour "G" — `#4285F4`, `#34A853`, `#FBBC05`, `#EA4335` | 20 dp | none |
+| Apple | single-path logo, drawn in the row's content colour | 19 dp | `onSurface` |
+| T-ID | 20 dp rounded square, 6 dp radius, `#FFDD2D`, with a dark "T" | 20 dp | none |
+
+**Consequence for the row model**: the marks are not uniform, so the row carries `isMonochrome`, set
+by the display table. That is a fact about the asset, not a theme value, and the composable branches
+on the flag rather than on the provider. Brand colours live inside the drawables, never in
+`YapColors` — the theme describes the product's roles, not other companies' palettes.
+
+## R26. The data layer, as reviewed and delivered
+
+The auth data layer was reviewed in full and simplified; this records what the review settled, so
+the questions are not reopened by accident.
+
+| Question | Answer |
+| --- | --- |
+| One repository or two? | **Two.** `AuthSessionRepository` owns the session lifecycle; `GoogleAuthRepository` owns one provider's login path. A provider-named method on a shared repository re-states, at the wrong layer, a decision `DefaultLoginUseCase` already made, and a second provider would either add a near-identical method or reuse a misnamed one (FR-063) |
+| Where does session state live? | **`SessionStore`.** One owner of the stored record and the only publisher of `AuthSessionState`, so "who decides the session state" is answerable from one file. The repository observes it; the token provider writes through it |
+| The "read storage once" guard | A mutex plus a resolved flag inside `SessionStore`, entered only by `resolveOnce()`. `observe()` deliberately emits the current value **before** resolving, so the first emission is `Unknown` and the root renders nothing until the second — which is what FR-002 depends on, and it is asserted by test |
+| `CurrentTime` port | **Kept.** Its purpose is testability of expiry and it is genuinely substituted; `Clock.System` is not injectable otherwise, and expiry arithmetic must be testable without wall-clock sleeps |
+| `SessionLocal` vs `SessionDto`, field-identical | **Kept apart.** Principle IV: a DTO is not a storage model. Collapsing them would make the on-device format a function of the wire format, so a server field rename would silently invalidate every stored session on every device. The four-line mapper is the price of the boundary |
+| Feature-owned HTTP failure translation | **Removed.** It moved into `core-network` as `ApiResult`/`ApiError`, so every feature gets the same four outcomes and FR-025's sign-out rule is expressible once (FR-064) |
+| `Lazy<AuthRemoteDataSource>` | **Kept.** The cycle is real; breaking it inside `coreNetworkModule` would move a feature's wiring problem into a `core-*` module for no behavioural gain. Recorded in plan.md's Complexity Tracking rather than left implicit |
+| `NonceGenerator` port | **Kept.** One implementation today, but it is the substitution seam the repository test uses, and a platform secure-random strategy is a plausible second |
+
+Out of scope of the review, deliberately: `SessionStorage` and its two platform implementations
+(the Keystore path is not something to refactor without a device test), and the Android credential
+adapters, whose fallback chain is real behaviour with its own tests.
+
+## R27. Where each behaviour lives
+
+| Behaviour | Owner |
+| --- | --- |
+| Which providers are shown, per platform | the roster (`DefaultObserveAuthProvidersUseCase`) |
+| Which providers can be chosen | the roster; enforced at login time by `DefaultLoginUseCase` |
+| Provider label, mark, and row tag | `AuthProviderUiMapper`, one table (FR-038) |
+| Opening the provider list | `Navigator.navigate(AuthNavKey.SelectAuthProvider)` |
+| The login call | one `LoginUseCase(provider)` over `getAll<ProviderLogin>()` |
+| The 60-second bound | `DefaultLoginUseCase` |
+| Outcome → message | `LoginNewsMapper` |
+| Session state and the stored record | `SessionStore` |
+| The refresh margin | `DefaultAuthSessionRepository` |
+| Rotation and the sign-out decision | `DefaultAccessTokenProvider` |
+| Status and transport → outcome | `core-network`'s `ApiClient` |
+| The palette | `YapColors` in `core-design` |
+| Message timing and motion | `LoginSnackbarHost` |
+
+## R28. The unavailable-provider path
+
+**Decision**: exactly the design's flow. Every visible row is tappable; choosing one closes the
+sheet and returns the provider as a navigation result; `LoginViewModel` calls `loginUseCase(provider)`
+and gets `Unavailable` back for a provider with no login path or one the roster marks not
+selectable; the message appears on the login screen. The selection screen only reports the choice —
+it never calls a use case and never decides an outcome.
+
+**The copy problem and its resolution**: the design's wording is per provider — *"Вход через Apple
+скоро появится"*. Branching over providers inside `LoginViewModel` would break FR-011. Instead the
+wording is one parameterised string, `login_provider_soon` = *"Вход через %1$s скоро появится"*,
+whose argument is the provider's label from the one display table. `News.ShowMessage` carries an
+optional `argument: StringResource?`, and the screen resolves the nested resource before showing it.
+
+**Alternatives**: a generic message — the design specifies the wording, and matching it cost one
+optional field. Keeping the sheet open and showing the message from its own mapper — rejected by the
+requester: the sheet closes on selection, as the design stages it. Per-provider message resources —
+three strings differing only by a name, growing with every provider.
+
+## R29. Source layout and hygiene
+
+**Decision**: rendering code lives in `app.yap.feature.auth.presentation.<slice>.ui`, nested under
+each presentation slice and mirrored in `commonMain`, `commonTest`, and `androidHostTest`. A file
+belongs there when it draws or styles the screen, or names a drawn element; view models and mappers
+stay one level up. What both slices share sits in `presentation/common`.
+
+**Rationale**: nesting keeps the slice's identity above the layer split, so a second slice repeats
+the pattern rather than competing for a shared `ui` namespace. The split matches the pipeline
+`docs/mobile/presentation/002-ui-compose.md` states: domain → `DataState` → mapper → `UiState` →
+Compose; everything left of the last arrow stays, everything right of it moves. `LoginTestTags` is
+the judgement call — no Compose import, but it is a vocabulary of rendered elements, and keeping it
+beside the mapper would leave the UI tests importing from two packages for one concern.
+
+**Visibility**: nothing widens. Kotlin's `internal` is module-scoped, not package-scoped, so a
+nested package needs no exception (FR-056).
+
+**Comments**: Kotlin sources carry none (FR-058). A survey found no machine-read comment form
+anywhere in the repository — suppressions here are the `@Suppress` annotation, which is code — so
+FR-058's preservation list is empty in practice. Facts that once lived only in a comment live in
+these artefacts or under `docs/`. Detekt has no `comments` ruleset configured, so nothing about the
+rule depends on tooling.
+
+**Guides reconciled in the same PR** (FR-062): `docs/mobile/001-feature-boundaries.md` (the nested
+`ui` package; the feature's Koin module function is public in `impl`, not `api`),
+`docs/mobile/003-dependency-injection.md` (the mutable back-stack tail, the `Navigator` binding,
+scene strategies, entry decorators), `docs/001-code-conventions.md` (declaration order: public API
+first, then private helpers depth-first below their callers, and in a view model each private holder
+directly above the public stream it backs), and `config/detekt/detekt.yml`
+(`ReturnCount.excludeGuardClauses`, so the guard-clause convention and the rule agree).
+
+**Test source sets opt in to `kotlinx.coroutines.ExperimentalCoroutinesApi` once**, in
+`KmpLibraryPlugin`. `TestScope.runCurrent()` and `advanceUntilIdle()` are still marked experimental
+in coroutines 1.11.0, and every view-model and repository test drives virtual time through them; a
+per-file `@OptIn` would be repeated in every test written from here on. Production source sets are
+untouched, so the marker still means something where it matters.
+
+## R30. Verification set
+
+`./gradlew build` for the repository-wide sweep, plus
+`./gradlew :apps:mobile:shared-app:compileKotlinIosSimulatorArm64` for the KMP boundary. Detail in
+[quickstart.md](quickstart.md). A change is reported complete only after both pass (FR-066).

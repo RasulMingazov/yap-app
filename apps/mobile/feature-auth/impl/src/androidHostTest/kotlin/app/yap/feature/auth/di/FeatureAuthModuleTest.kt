@@ -5,13 +5,13 @@ import app.yap.core.common.navigation.Navigator
 import app.yap.core.common.platform.ActivityProvider
 import app.yap.core.common.platform.MotionPreferences
 import app.yap.core.common.platform.Platform
-import app.yap.core.network.NetworkClient
+import app.yap.core.network.ApiClient
 import app.yap.feature.auth.api.entity.AuthProvider
 import app.yap.feature.auth.api.usecase.LoginUseCase
 import app.yap.feature.auth.api.usecase.ObserveAuthProvidersUseCase
 import app.yap.feature.auth.domain.provider.ProviderLogin
-import app.yap.feature.auth.domain.repository.AuthRepository
-import app.yap.feature.auth.domain.repository.StubAuthRepository
+import app.yap.feature.auth.domain.repository.GoogleAuthRepository
+import app.yap.feature.auth.domain.repository.StubGoogleAuthRepository
 import app.yap.feature.auth.domain.usecase.DefaultObserveAuthProvidersUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,10 +35,10 @@ internal class FeatureAuthModuleTest {
         ).verify(
             extraTypes = listOf(
                 ActivityProvider::class,
+                ApiClient::class,
                 Context::class,
                 MotionPreferences::class,
                 Navigator::class,
-                NetworkClient::class,
                 Platform::class,
             ),
         )
@@ -59,7 +59,7 @@ internal class FeatureAuthModuleTest {
     @Test
     fun `GIVEN the roster WHEN a provider may be chosen THEN the graph holds one login path for it`() = runTest {
         val koin = graph()
-        val registered = koin.getAll<ProviderLogin>().map(ProviderLogin::provider)
+        val registered = koin.getAll<ProviderLogin>().map(ProviderLogin::type)
 
         try {
             assertEquals(
@@ -71,7 +71,7 @@ internal class FeatureAuthModuleTest {
                 val selectable = DefaultObserveAuthProvidersUseCase(platform = platform)()
                     .first()
                     .filter(AuthProvider::isEnabled)
-                    .map { provider -> provider::class }
+                    .map(AuthProvider::type)
 
                 assertEquals(
                     expected = selectable,
@@ -92,7 +92,7 @@ internal class FeatureAuthModuleTest {
                 termsUrl = null,
             ),
             module {
-                single<AuthRepository> { StubAuthRepository() }
+                single<GoogleAuthRepository> { StubGoogleAuthRepository() }
                 single<Platform> { Platform.ANDROID }
             },
         )

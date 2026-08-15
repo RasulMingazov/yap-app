@@ -1,13 +1,12 @@
 package app.yap.feature.auth.domain.provider
 
-import app.yap.feature.auth.api.entity.AuthProvider
+import app.yap.feature.auth.api.entity.AuthProviderType
 import app.yap.feature.auth.api.entity.LoginOutcome
 import io.github.rasulmingazov.stubcall.StubCall0
-import kotlin.reflect.KClass
 import kotlinx.coroutines.CompletableDeferred
 
 internal class StubProviderLogin(
-    override val provider: KClass<out AuthProvider> = AuthProvider.Google::class,
+    override val type: AuthProviderType = AuthProviderType.GOOGLE,
     outcome: LoginOutcome = LoginOutcome.Success,
     private val gate: CompletableDeferred<Unit>? = null,
 ) : ProviderLogin {
