@@ -20,11 +20,12 @@ Xcode host embedding `YapShared.framework`, and the server process itself.
 
 Technical shape:
 
-- `feature-auth` splits into `api`/`impl`. Google credential retrieval is one port declared in
-  `api`. On Android it is Credential Manager with a PKCE browser fallback for devices without
-  Google's services; on iOS it is supplied from Swift. The two Android paths return different
-  artefacts — an ID token or an authorization code — which is why the server exposes two Google
-  doors onto one account resolution.
+- `feature-auth` splits into `api`/`impl`. Google credential retrieval is one port `internal` to
+  `impl`, implemented per platform source set. On Android it is Credential Manager with a PKCE
+  browser fallback for devices without Google's services; on iOS an internal adapter calls one
+  nullable ID-token function supplied by a `shared-app` bridge to the official GoogleSignIn SDK.
+  The two Android paths return different artefacts — an ID token or an authorization code — which
+  is why the server exposes two Google doors onto one account resolution.
 - The session lives in Keystore-encrypted DataStore on Android and the Keychain on iOS, behind
   `SessionStore`, which is the single owner of the stored record and of the published
   `AuthSessionState`. It reaches `core-network` through the `AccessTokenProvider` seam.
@@ -65,7 +66,7 @@ cancellation.
 ## Technical Context
 
 **Language/Version**: Kotlin 2.4.0 — `commonMain`/`androidMain`/`iosMain` for the client, JVM 17
-for the server; Swift for the iOS host.
+for the server; Swift for the iOS host's entry point and GoogleSignIn bridge.
 
 **Primary Dependencies**: Compose Multiplatform 1.11.1 with Material3 1.9.0, Koin 4.2.2, AndroidX
 Lifecycle 2.11.0, Ktor 3.5.0 (client and server), kotlinx.serialization 1.11.0, kotlinx-coroutines
@@ -74,8 +75,8 @@ Lifecycle 2.11.0, Ktor 3.5.0 (client and server), kotlinx.serialization 1.11.0, 
 ([research.md](research.md) R19). Added by this feature: `androidx.credentials` +
 `com.google.android.libraries.identity.googleid`, `net.openid:appauth`, `androidx.datastore`,
 `androidx.core:core-splashscreen` (Android only), `com.auth0:jwks-rsa`, `ktor-server-status-pages`,
-`ktor-server-rate-limit`, `ktor-client-cio`, `ktor-client-mock` (tests), GoogleSignIn iOS SDK via
-Swift Package Manager.
+`ktor-server-rate-limit`, `ktor-client-cio`, `ktor-client-mock` (tests), and GoogleSignIn 9.1.0
+through Swift Package Manager in the Xcode host.
 
 **Storage**: PostgreSQL 17 on the server (`users`, `provider_identities`, `sessions`, owned by
 `services/server/feature-auth` with forward-only Flyway migrations). On device: Android Keystore
@@ -108,7 +109,7 @@ two platform credential adapters.
 
 | Principle | Gate | Status |
 | --- | --- | --- |
-| I. Feature-First Module Boundaries | `feature-auth` is exactly `api` + `impl`; `api` depends only on `core-*`; declarations default to `internal` | PASS — `api` publishes `AuthNavKey`, the use-case contracts, their entities, and `GoogleCredentialProvider`; `featureAuthModule()` is public in `impl`, because a function in `api` cannot bind declarations `internal` to `impl`. `core-common` gains `Navigator`, `core-design` gains `BottomSheetSceneStrategy`; neither names a feature type |
+| I. Feature-First Module Boundaries | `feature-auth` is exactly `api` + `impl`; `api` depends only on `core-*`; declarations default to `internal` | PASS — `api` publishes `AuthNavKey`, the use-case contracts, and their entities; the Google credential port stays `internal` in `impl` because nothing outside the feature implements it; `featureAuthModule()` is public in `impl`, because a function in `api` cannot bind declarations `internal` to `impl`. `core-common` gains `Navigator`, `core-design` gains `BottomSheetSceneStrategy`; neither names a feature type |
 | II. Layered Dependencies | `presentation → domain ← data`; platform source sets carry narrow adapters; view models report intent rather than navigating | PASS — both view models depend on use cases and `Navigator` only; login success is published as session state and `app-root` swaps the back stack's base; Credential Manager and Keychain code stays in platform source sets; `ProviderLogin` is a domain port; `AuthProvider` carries a type and two booleans |
 | III. Test-First for Behavior Change | A failing focused test precedes each behavior change | PASS — behavioural units are tested at the boundary that owns them ([research.md](research.md) R10). Dependency bumps, file moves, and the comment cleanup carry no test, which is the constitution's own carve-out |
 | IV. Wire Contracts at the Boundary | Wire types live in `shared/contract/*`, carry the `Dto` suffix, and are mapped at the repository and route boundaries | PASS — `GoogleCredentialsDto`, `GoogleAuthorizationCodeDto`, `RefreshCredentialsDto`, `SessionDto` in `shared/contract/auth`; `ErrorResponseDto` and `ApiErrorCode` in `shared/contract/common`, shared by the server's `StatusPages` mapping and the client's `ApiClient` |
@@ -138,7 +139,6 @@ apps/mobile/core-design/src/commonMain/…/core/design/
 apps/mobile/feature-auth/
 ├── api/…/feature/auth/api/
 │   ├── AuthNavKey.kt                                         # Login + SelectAuthProvider
-│   ├── GoogleCredentialProvider.kt, LoginCancelledException.kt
 │   ├── entity/                                               # AuthProvider, AuthProviderType,
 │   │                                                         # AuthSessionState, LegalLinks,
 │   │                                                         # LoginOutcome, UserId
@@ -161,7 +161,7 @@ apps/mobile/feature-auth/
     │   ├── presentation/selectprovider/ui/{SelectAuthProviderScreen,…TestTags}.kt
     │   └── di/FeatureAuthModule.kt                           # public; app-root loads it from impl
     ├── androidMain/                                          # Credential Manager + AppAuth, Keystore+DataStore
-    └── iosMain/                                              # Keychain session storage
+    └── iosMain/                                              # SDK credential adapter, Keychain session storage
 
 apps/mobile/app-root/src/commonMain/…/app/root/
 ├── App.kt                                                    # onBack, sceneStrategies, entryDecorators
@@ -171,7 +171,7 @@ apps/mobile/app-root/src/commonMain/…/app/root/
 
 apps/mobile/shared-app/            # App(), initAndroidKoin, initIosKoin, mainViewController
 apps/mobile/android-app/           # MainActivity, splash, OAuth redirect intent filter
-apps/mobile/ios-app/               # Xcode host: YapShared.framework, GoogleSignIn SPM
+apps/mobile/ios-app/               # Xcode host: YapShared.framework, GoogleSignIn bridge
 
 services/server/feature-auth/src/main/
 ├── kotlin/…/server/feature/auth/{AuthService,api,identity,model,persistence}

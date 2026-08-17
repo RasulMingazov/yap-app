@@ -5,9 +5,9 @@ import app.yap.contract.auth.GoogleCredentialsDto
 import app.yap.contract.auth.SessionDto
 import app.yap.core.common.coroutines.runSuspendCatching
 import app.yap.core.network.ApiResult
-import app.yap.feature.auth.api.GoogleCredential
-import app.yap.feature.auth.api.GoogleCredentialProvider
-import app.yap.feature.auth.api.LoginCancelledException
+import app.yap.feature.auth.data.identity.GoogleCredential
+import app.yap.feature.auth.data.identity.GoogleCredentialProvider
+import app.yap.feature.auth.data.identity.LoginCancelledException
 import app.yap.feature.auth.api.entity.LoginOutcome
 import app.yap.feature.auth.data.SessionStore
 import app.yap.feature.auth.data.identity.NonceGenerator

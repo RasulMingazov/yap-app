@@ -52,9 +52,9 @@ links are built regardless (FR-051).
 ```
 
 iOS: open `apps/mobile/ios-app/YapApp.xcodeproj`, build `:apps:mobile:shared-app` first so
-`YapShared.framework` exists, then run. The host must add the GoogleSignIn package, register the
-reversed-client-ID URL scheme, forward `application(_:open:options:)` to `GIDSignIn`, and pass its
-`GoogleCredentialProvider` implementation into `initIosKoin`.
+`YapShared.framework` exists, let Swift Package Manager resolve the pinned GoogleSignIn dependency,
+then run. The host must register the reversed-client-ID URL scheme and replace the iOS and web
+client-ID placeholders in `YapApp.swift`; `GoogleSignInBridge` is passed into `initIosKoin`.
 
 ## Verify
 

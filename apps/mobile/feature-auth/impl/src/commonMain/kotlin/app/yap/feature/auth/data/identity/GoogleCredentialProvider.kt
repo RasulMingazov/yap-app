@@ -1,11 +1,11 @@
-package app.yap.feature.auth.api
+package app.yap.feature.auth.data.identity
 
-interface GoogleCredentialProvider {
+internal interface GoogleCredentialProvider {
 
     suspend fun requestCredential(nonce: String): GoogleCredential
 }
 
-sealed interface GoogleCredential {
+internal sealed interface GoogleCredential {
 
     data class IdToken(val value: String) : GoogleCredential
 

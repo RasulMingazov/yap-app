@@ -18,7 +18,6 @@ internal class SelectAuthProviderViewModel(
 ) : BaseViewModel() {
 
     private val dataState = MutableStateFlow(DataState())
-
     val uiState: StateFlow<UiState> = dataState.mapState(uiStateMapper::invoke)
 
     init {

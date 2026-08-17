@@ -182,6 +182,7 @@ fun initKoin(
     termsUrl: String?,
     googleAndroidClientId: String = "",
     googleRedirectUri: String = "",
+    iosGoogleIdTokenRequester: (suspend (String) -> String?)? = null,
     appDeclaration: KoinAppDeclaration = {},
 ): KoinApplication
 ```

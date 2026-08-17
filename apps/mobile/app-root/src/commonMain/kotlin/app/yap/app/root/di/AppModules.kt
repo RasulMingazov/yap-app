@@ -14,6 +14,7 @@ internal fun appModules(
     termsUrl: String?,
     googleAndroidClientId: String = "",
     googleRedirectUri: String = "",
+    iosGoogleIdTokenRequester: (suspend (nonce: String) -> String?)? = null,
 ): List<Module> = listOf(
     appRootModule(),
     featureAuthModule(
@@ -22,6 +23,7 @@ internal fun appModules(
         termsUrl = termsUrl,
         googleAndroidClientId = googleAndroidClientId,
         googleRedirectUri = googleRedirectUri,
+        iosGoogleIdTokenRequester = iosGoogleIdTokenRequester,
     ),
     coreNetworkModule(baseUrl),
 )
@@ -33,6 +35,7 @@ fun initKoin(
     termsUrl: String?,
     googleAndroidClientId: String = "",
     googleRedirectUri: String = "",
+    iosGoogleIdTokenRequester: (suspend (nonce: String) -> String?)? = null,
     appDeclaration: KoinAppDeclaration = {},
 ): KoinApplication = startKoin {
     appDeclaration()
@@ -44,6 +47,7 @@ fun initKoin(
             termsUrl = termsUrl,
             googleAndroidClientId = googleAndroidClientId,
             googleRedirectUri = googleRedirectUri,
+            iosGoogleIdTokenRequester = iosGoogleIdTokenRequester,
         ),
     )
 }

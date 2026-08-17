@@ -18,7 +18,8 @@ feature-auth/
 - The feature's `NavKey` hierarchy.
 - Use-case contracts — the interface only, never `Default...UseCase`.
 - Entities and value objects appearing in those signatures.
-- Ports another module implements or calls, such as a platform credential provider.
+- Ports another module implements or calls, such as one `app-root` invokes at launch. A port only
+  `impl` uses stays in `impl`, however platform-specific its implementations are.
 
 Everything else is `impl` and stays `internal`: repository ports and implementations, use-case
 implementations, data sources, mappers, view models, and composables. The feature's Koin module

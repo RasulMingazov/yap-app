@@ -4,8 +4,8 @@ import app.yap.contract.auth.GoogleAuthorizationCodeDto
 import app.yap.contract.auth.GoogleCredentialsDto
 import app.yap.core.network.ApiError
 import app.yap.core.network.ApiResult
-import app.yap.feature.auth.api.GoogleCredential
-import app.yap.feature.auth.api.LoginCancelledException
+import app.yap.feature.auth.data.identity.GoogleCredential
+import app.yap.feature.auth.data.identity.LoginCancelledException
 import app.yap.feature.auth.api.entity.AuthSessionState
 import app.yap.feature.auth.api.entity.LoginOutcome
 import app.yap.feature.auth.api.entity.UserId

@@ -164,6 +164,7 @@ fun featureAuthModule(
     termsUrl: String?,
     googleAndroidClientId: String = "",
     googleRedirectUri: String = "",
+    iosGoogleIdTokenRequester: (suspend (String) -> String?)? = null,
 ): Module
 
 single { GoogleProviderLogin(googleAuthRepository = get()) } bind ProviderLogin::class

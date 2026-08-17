@@ -146,17 +146,17 @@ path, so the user is told the attempt failed and can retry, not which server rul
 
 ## Client-side ports
 
-`GoogleCredentialProvider` is not HTTP, but it is a contract this feature publishes — Swift
-implements it in the Xcode host.
+`GoogleCredentialProvider` is not HTTP, but it is the seam each platform's login path implements.
+It is `internal` to `feature-auth/impl`: nothing outside the feature implements or calls it.
 
 ```kotlin
-// feature-auth/api — public because Swift implements it
-interface GoogleCredentialProvider {
+// feature-auth/impl — one port, one implementation per platform source set
+internal interface GoogleCredentialProvider {
 
     suspend fun requestCredential(nonce: String): GoogleCredential
 }
 
-sealed interface GoogleCredential {
+internal sealed interface GoogleCredential {
 
     data class IdToken(val value: String) : GoogleCredential
 
@@ -170,10 +170,11 @@ sealed interface GoogleCredential {
 
 One port, two credential shapes — which one comes back decides which endpoint the repository calls.
 Android's implementation tries Credential Manager and falls back to the browser on its own; iOS
-always returns an `IdToken`. Nothing above the repository knows which path ran, which is what keeps
-FR-016's "the user is never told which one ran" honest. Both implementations signal user dismissal
-by throwing `LoginCancelledException`, which the repository maps to `LoginOutcome.Cancelled` —
-dismissing the browser tab is that same cancellation, not a failure.
+wraps the host's narrow GoogleSignIn bridge and always returns an `IdToken` (R2). Nothing above the
+repository knows which path ran, which is what keeps FR-016's "the user is never told which one ran"
+honest. Both implementations signal user dismissal by throwing `LoginCancelledException`, which
+the repository maps to `LoginOutcome.Cancelled` — dismissing the SDK flow is that same
+cancellation, not a failure.
 
 `RefreshSessionUseCase` is the second published port, and it exists for the opposite reason:
 `app-root` calls it rather than implements it.

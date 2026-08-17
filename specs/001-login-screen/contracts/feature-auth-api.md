@@ -3,7 +3,7 @@
 **Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen` | **Refreshed**: 2026-08-15
 
 The public surface other modules may see. Everything else stays `internal` in `impl`. The HTTP
-surface and the port Swift implements are in [auth-api.md](auth-api.md).
+surface and the feature's internal credential port are in [auth-api.md](auth-api.md).
 
 ## Navigation keys
 
@@ -84,18 +84,20 @@ fun interface GetLegalLinksUseCase { suspend operator fun invoke(): LegalLinks }
 
 `Default…UseCase` implementations stay `internal` in `impl`.
 
-## Platform port
+## No platform port
 
-`GoogleCredentialProvider` and the `GoogleCredential` hierarchy are public because Swift implements
-them in the Xcode host; `LoginCancelledException` travels with them. Declarations and behaviour are
-in [auth-api.md](auth-api.md).
+Each platform's Google login lives in its own source set inside `impl`, so
+`GoogleCredentialProvider`, `GoogleCredential`, and `LoginCancelledException` are `internal` there —
+see [auth-api.md](auth-api.md). Nothing outside the feature implements them, and the iOS framework
+exports no feature auth type at all. Its `IosGoogleSignInBridge` belongs to `shared-app` and carries
+only a nonce in and a nullable ID-token string out.
 
 ## Consumer impact
 
 | Consumer | Surface it uses |
 | --- | --- |
 | `app-root` | `ObserveAuthSessionStateUseCase` for the back stack base, `RefreshSessionUseCase` for the launch refresh, `AuthNavKey.Login` as the logged-out base |
-| `shared-app` | exports `feature-auth:api` from the iOS framework so Swift can implement `GoogleCredentialProvider` |
+| `ios-app` | `IosGoogleSignInBridge` from `shared-app`; no `feature-auth` declaration |
 | `feature-auth/impl` | implements every contract above; `GoogleProviderLogin` serves `AuthProviderType.GOOGLE` |
 
 ## Rules this contract keeps

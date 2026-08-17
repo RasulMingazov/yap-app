@@ -1,7 +1,7 @@
 package app.yap.feature.auth.data.identity
 
-import app.yap.feature.auth.api.GoogleCredential
-import app.yap.feature.auth.api.GoogleCredentialProvider
+import app.yap.feature.auth.data.identity.GoogleCredential
+import app.yap.feature.auth.data.identity.GoogleCredentialProvider
 import io.github.rasulmingazov.stubcall.StubCall1
 
 internal class StubGoogleCredentialProvider(

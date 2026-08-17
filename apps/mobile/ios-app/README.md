@@ -2,7 +2,7 @@
 
 The Xcode host application. Everything shared with Android is Kotlin, delivered as
 `YapShared.framework` by `:apps:mobile:shared-app`; what lives here is only what has
-to be Swift.
+to be Swift — the entry point, its configuration, the GoogleSignIn bridge, and the launch screen.
 
 This project is outside Gradle, so `./gradlew build` cannot verify it. The Gradle
 side is checked by `:apps:mobile:shared-app:compileKotlinIosSimulatorArm64`; this
@@ -20,28 +20,23 @@ side is checked by building and running it in Xcode.
 
 ## Google login
 
-Google's iOS SDK stays entirely in Xcode rather than in the Gradle build, so the
-Kotlin side never depends on an iOS SDK and sees one narrow suspend function.
+GoogleSignIn 9.1.0 is pinned through Swift Package Manager. `GoogleSignInBridge.swift` is its only
+boundary with shared Kotlin: it passes the attempt nonce into the SDK and returns an ID token, or
+`nil` when the user dismisses the flow. `feature-auth/impl` keeps its credential contract internal
+and maps that narrow result into the same repository path Android uses.
 
-- Add **GoogleSignIn** through Swift Package Manager
-  (`https://github.com/google/GoogleSignIn-iOS`).
 - Register the reversed iOS client ID as a URL scheme in `Info.plist`, replacing the
   `com.googleusercontent.apps.REPLACE_WITH_IOS_CLIENT_ID` placeholder.
-- Forward `application(_:open:options:)` to `GIDSignIn.sharedInstance.handle(_:)` —
-  `YapApp.swift` does this through SwiftUI's `onOpenURL`.
-- `GoogleCredentialProviderImpl.swift` implements the Kotlin
-  `GoogleCredentialProvider` contract and is handed to `initIosKoin`, which is what
-  makes it the credential path the shared code uses. It returns an ID token only:
-  the authorization-code fallback is Android's, because Credential Manager needs
-  Google's services while `ASWebAuthenticationSession` does not.
+- `YapApp.swift` forwards the returned URL to `GIDSignIn` through SwiftUI's `onOpenURL`.
+- The SDK owns browser presentation, PKCE, token exchange, saved account state, and optional App
+  Check integration. Kotlin sees none of those SDK types.
 
 ## Configuration
 
-`YapApp.swift` owns the base URL, the web client ID, and the two legal destinations,
-mirroring `MainActivity` on Android. A simulator reaches a server running on this
-machine at `http://localhost:8080`. Both legal destinations stay `nil` until the
-documents exist — the line renders either way, and the app is not released to users
-while either is unset.
+`YapApp.swift` owns the base URL, the iOS and web client IDs, and the two legal destinations,
+mirroring `MainActivity` on Android. A simulator reaches a server running on this machine at
+`http://localhost:8080`. Both legal destinations stay `nil` until the documents exist — the line
+renders either way, and the app is not released to users while either is unset.
 
 ## Launch screen
 

@@ -52,6 +52,7 @@ fun featureAuthModule(
     termsUrl: String?,
     googleAndroidClientId: String = "",
     googleRedirectUri: String = "",
+    iosGoogleIdTokenRequester: (suspend (nonce: String) -> String?)? = null,
 ): Module = module {
     single<SessionStorage> { createSessionStorage() }
 
@@ -63,6 +64,7 @@ fun featureAuthModule(
         googleAndroidClientId = googleAndroidClientId,
         googleRedirectUri = googleRedirectUri,
         googleServerClientId = googleServerClientId,
+        iosGoogleIdTokenRequester = iosGoogleIdTokenRequester,
     )
 
     single<CurrentTime> { SystemCurrentTime() }
@@ -151,4 +153,5 @@ internal expect fun Module.bindGoogleCredentialProvider(
     googleAndroidClientId: String,
     googleRedirectUri: String,
     googleServerClientId: String,
+    iosGoogleIdTokenRequester: (suspend (nonce: String) -> String?)?,
 )

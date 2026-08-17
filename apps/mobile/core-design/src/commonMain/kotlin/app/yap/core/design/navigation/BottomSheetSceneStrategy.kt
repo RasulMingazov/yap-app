@@ -36,7 +36,6 @@ private val HandleWidth = 36.dp
 private val SheetBorderThickness = 1.dp
 private val SheetBottomPadding = 20.dp
 private val SheetCornerRadius = 24.dp
-private val SheetSidePadding = 20.dp
 private val SheetTopPadding = 10.dp
 
 private val SheetShape = RoundedCornerShape(topStart = SheetCornerRadius, topEnd = SheetCornerRadius)
@@ -114,8 +113,6 @@ private class BottomSheetScene<T : Any>(
                         .navigationBarsPadding()
                         .padding(
                             bottom = SheetBottomPadding,
-                            end = SheetSidePadding,
-                            start = SheetSidePadding,
                             top = SheetTopPadding,
                         ),
                 ) {

@@ -7,8 +7,6 @@ import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import app.yap.core.common.platform.ActivityProvider
-import app.yap.feature.auth.api.GoogleCredential
-import app.yap.feature.auth.api.LoginCancelledException
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
 import net.openid.appauth.AuthorizationRequest

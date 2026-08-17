@@ -38,22 +38,27 @@ trigger it: the user said no, and reopening the question in a browser is the opp
 
 ## R2. Google login on iOS
 
-**Decision**: `GoogleCredentialProvider` is a public `suspend` interface in `feature-auth/api`,
-implemented in **Swift** in the Xcode host with the GoogleSignIn SDK and handed to Kotlin through
-`initIosKoin(...)` exported by `shared-app`.
+**Decision**: the Xcode host pins GoogleSignIn 9.1.0 through Swift Package Manager and implements
+`IosGoogleSignInBridge` from `shared-app`. The bridge accepts the attempt nonce and returns only a
+nullable ID-token string: `nil` is dismissal, while SDK failures remain failures. An internal
+`IosSdkGoogleCredentialProvider` in `feature-auth/impl/src/iosMain` maps that result into the
+feature's private credential hierarchy.
 
-- GoogleSignIn is added via Swift Package Manager; `shared-app` must `api(...)` and `export(...)`
-  the auth API so Swift can implement the port.
-- Kotlin `suspend` surfaces to Swift as `async`. iOS never returns an authorization code, which is
-  why `/v1/auth/google/code` is an Android-only door.
-- The host needs the reversed-client-ID URL scheme and must forward
-  `application(_:open:options:)` to `GIDSignIn`.
+- `GIDConfiguration` receives both the iOS client ID and the web server client ID, so the returned
+  ID token is minted for the audience the backend accepts.
+- The custom nonce API binds that token to the repository attempt the server verifies.
+- GoogleSignIn owns browser presentation, PKCE, token exchange, saved account state, and the
+  supported path to App Check. The host forwards its reversed-client-ID URL scheme through
+  `onOpenURL`.
+- No GoogleSignIn type crosses the Kotlin framework boundary, and no auth declaration returns to
+  `feature-auth/api`.
 
-**Rationale**: keeping the SDK in Xcode leaves the Gradle build independent of an iOS SDK, and the
-Kotlin side sees one narrow suspend function.
+**Rationale**: this keeps the corrected feature boundary while leaving OAuth protocol maintenance
+to Google's SDK. A bridge in the composition host is the honest platform boundary: it contains no
+repository or domain decision, only SDK adaptation.
 
-**Consequence to state plainly**: `./gradlew build` cannot verify the iOS host. Gradle is verified
-by `:apps:mobile:shared-app:compileKotlinIosSimulatorArm64`; the Swift side is a manual Xcode step.
+**Consequence to state plainly**: Gradle tests the internal adapter and framework export, but only
+the Xcode build and a simulator/device run prove the Swift SDK call and presentation.
 
 ## R3. Session storage on device
 
@@ -219,10 +224,11 @@ boundary that owns it, and `docs/testing/003` forbids substituting a fake for Po
 | `io.ktor:ktor-server-status-pages`, `:ktor-server-rate-limit` | `services/server/app` | failure mapping and per-IP limiting (R13) |
 | `io.ktor:ktor-client-mock` | `core-network` tests | `ApiClient` behaviour without a server |
 | `io.ktor:ktor-server-test-host`, `org.testcontainers:postgresql` | server tests | routes and PostgreSQL integration |
+| `GoogleSignIn` 9.1.0 (SwiftPM) | `ios-app` | official iOS sign-in, nonce, token exchange, App Check path (R2) |
 
 Each is pinned exactly in `gradle/libs.versions.toml` — no ranges, no `+`, no alpha unless nothing
-stable exists. The one deliberate exception is Navigation 3 (R19). GoogleSignIn for iOS is added in
-Xcode and never appears in the catalogue.
+stable exists. The one deliberate exception is Navigation 3 (R19). The SwiftPM dependency is pinned
+exactly in `YapApp.xcodeproj` rather than the Gradle catalogue (R2).
 
 ## R12. Holding the launch screen until session state is known
 
@@ -275,7 +281,8 @@ exists (FR-016).
 and an embedded view breaks the property that makes the flow safe — the user cannot see the address
 bar. FR-016 forbids it outright.
 
-**Why iOS needs nothing**: the GoogleSignIn SDK already presents `ASWebAuthenticationSession`.
+**Why iOS differs**: GoogleSignIn owns its browser and token exchange (R2), so iOS has nothing to
+fall back *from* and never calls this endpoint.
 
 **Known limitation**: a device with no Google provider *and* no capable browser cannot log in. That
 is a genuine dead end, reported through the ordinary failure path (FR-030); T-ID is what eventually

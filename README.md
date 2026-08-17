@@ -19,7 +19,7 @@ shared/
 
 apps/mobile/
 ├── android-app                # Android entry point: MainActivity, splash, OAuth redirect
-├── ios-app                    # Xcode host: YapShared.framework, GoogleSignIn
+├── ios-app                    # Xcode host: YapShared.framework, GoogleSignIn bridge
 ├── shared-app                 # platform entry points and iOS framework
 ├── app-root                   # composition root: Koin graph, back stack, launch renewal
 ├── feature-auth/api           # what other modules may see of authentication

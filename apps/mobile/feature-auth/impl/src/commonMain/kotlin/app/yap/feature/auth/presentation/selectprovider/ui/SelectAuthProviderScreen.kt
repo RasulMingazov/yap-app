@@ -42,10 +42,10 @@ import org.koin.compose.viewmodel.koinViewModel
 private const val SECTION_LABEL_SIZE = 13
 private const val SECTION_LABEL_TRACKING = 0.04
 private const val ROW_LABEL_SIZE = 16
+private val ContentSidePadding = 24.dp
 private val MarkGap = 12.dp
 private val RowGap = 2.dp
 private val RowMinHeight = 52.dp
-private val RowSidePadding = 4.dp
 private val SectionLabelBottomPadding = 10.dp
 private val SectionLabelTopPadding = 4.dp
 
@@ -86,7 +86,7 @@ internal fun SelectAuthProviderContent(
             modifier = Modifier
                 .padding(
                     bottom = SectionLabelBottomPadding,
-                    start = RowSidePadding,
+                    start = ContentSidePadding,
                     top = SectionLabelTopPadding,
                 )
                 .testTag(SelectAuthProviderTestTags.SECTION_LABEL),
@@ -124,7 +124,7 @@ private fun AuthProviderRow(
             horizontalArrangement = Arrangement.spacedBy(MarkGap),
             modifier = Modifier
                 .heightIn(min = RowMinHeight)
-                .padding(horizontal = RowSidePadding),
+                .padding(horizontal = ContentSidePadding),
         ) {
             Icon(
                 painter = painterResource(provider.ui.iconRes),
