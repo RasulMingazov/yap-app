@@ -11,8 +11,8 @@ destinations set (FR-051) — and release to iOS users on the Sign in with Apple
 
 - Notion product page "001. Авторизация"
   (https://app.notion.com/p/001-3abdc7d20da48100bafeec7b2ace8de2)
-- The Claude Design project screen `screen_login.dc.html`
-  (https://claude.ai/design/p/0c49e08b-d7ab-4cd3-88be-8483024790e5)
+- The Claude Design project screen `feature_auth.dc.html`
+  (https://claude.ai/design/p/0baa8de1-eb4c-4522-90e4-b1fee4009f4a?file=feature_auth.dc.html)
 
 This document is the single specification for the authentication slice. Two follow-ups that were
 once specified separately — the rendering-package split with the repository-wide comment cleanup,

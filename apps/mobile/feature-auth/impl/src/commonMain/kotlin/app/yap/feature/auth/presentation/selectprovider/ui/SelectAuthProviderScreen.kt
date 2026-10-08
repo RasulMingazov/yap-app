@@ -112,7 +112,7 @@ private fun AuthProviderRow(
     Surface(
         onClick = onClick,
         color = Color.Transparent,
-        contentColor = if (isPressed) colors.accent else colors.onSurface,
+        contentColor = if (isPressed) colors.pressed else colors.onSurface,
         interactionSource = interactionSource,
         modifier = Modifier
             .fillMaxWidth()
