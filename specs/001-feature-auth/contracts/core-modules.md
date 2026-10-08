@@ -1,6 +1,6 @@
 # Contract: shared modules (`core-common`, `core-network`, `core-design`, `app-root`)
 
-**Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen` | **Refreshed**: 2026-08-15
+**Branch**: `feature/001-feature-auth` | **Feature ID**: `001-feature-auth` | **Refreshed**: 2026-08-15
 
 ## Version catalogue
 

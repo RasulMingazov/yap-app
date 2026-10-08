@@ -1,6 +1,6 @@
 # Contract: auth presentation
 
-**Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen` | **Refreshed**: 2026-08-15
+**Branch**: `feature/001-feature-auth` | **Feature ID**: `001-feature-auth` | **Refreshed**: 2026-08-15
 
 Both view models follow `docs/mobile/presentation/001-view-models.md`: nested `DataState`,
 `UiState`, `News`, `Event`; `internal`; `BaseViewModel`; use cases, preferences, and `Navigator`

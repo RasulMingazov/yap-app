@@ -1,6 +1,6 @@
 # Contract: `feature-auth/api`
 
-**Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen` | **Refreshed**: 2026-08-15
+**Branch**: `feature/001-feature-auth` | **Feature ID**: `001-feature-auth` | **Refreshed**: 2026-08-15
 
 The public surface other modules may see. Everything else stays `internal` in `impl`. The HTTP
 surface and the feature's internal credential port are in [auth-api.md](auth-api.md).

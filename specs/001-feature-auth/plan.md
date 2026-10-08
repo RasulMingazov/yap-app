@@ -1,6 +1,6 @@
-# Implementation Plan: Login Screen
+# Implementation Plan: Authentication
 
-**Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen`
+**Branch**: `feature/001-feature-auth` | **Feature ID**: `001-feature-auth`
 | **Refreshed**: 2026-08-15 | **Spec**: [spec.md](spec.md)
 
 The branch carries the feature number after the kind prefix `CLAUDE.md` requires. spec-kit locates

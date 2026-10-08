@@ -1,10 +1,10 @@
 ---
-description: "Task list for the Login Screen feature"
+description: "Task list for the Authentication feature"
 ---
 
-# Tasks: Login Screen
+# Tasks: Authentication
 
-**Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen` | **Refreshed**: 2026-08-15
+**Branch**: `feature/001-feature-auth` | **Feature ID**: `001-feature-auth` | **Refreshed**: 2026-08-15
 
 **Status**: all work below is delivered. The per-task list that drove the implementation (T001 …
 T237) has served its purpose and is replaced by this record; the artefacts that still govern the

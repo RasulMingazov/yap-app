@@ -1,6 +1,6 @@
-# Data Model: Login Screen
+# Data Model: Authentication
 
-**Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen` | **Refreshed**: 2026-08-15
+**Branch**: `feature/001-feature-auth` | **Feature ID**: `001-feature-auth` | **Refreshed**: 2026-08-15
 
 Four views of the same slice: what the server persists, what the client keeps, what the feature's
 domain exposes, and what presentation holds. Wire shapes are in

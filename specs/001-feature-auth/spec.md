@@ -1,6 +1,6 @@
-# Feature Specification: Login Screen
+# Feature Specification: Authentication
 
-**Feature Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen`
+**Feature Branch**: `feature/001-feature-auth` | **Feature ID**: `001-feature-auth`
 
 **Created**: 2026-08-13 | **Refreshed**: 2026-08-15 against the implemented code
 

@@ -1,6 +1,6 @@
-# Quickstart: Login Screen
+# Quickstart: Authentication
 
-**Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen` | **Refreshed**: 2026-08-15
+**Branch**: `feature/001-feature-auth` | **Feature ID**: `001-feature-auth` | **Refreshed**: 2026-08-15
 
 How to configure, run, and verify the feature. Shapes and rationale live in [plan.md](plan.md),
 [research.md](research.md), [data-model.md](data-model.md), and [contracts/](contracts/).

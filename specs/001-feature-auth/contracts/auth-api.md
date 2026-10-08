@@ -1,6 +1,6 @@
 # Contract: Auth API and client-side ports
 
-**Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen` | **Refreshed**: 2026-08-15
+**Branch**: `feature/001-feature-auth` | **Feature ID**: `001-feature-auth` | **Refreshed**: 2026-08-15
 
 Three endpoints, four auth DTOs, and one shared error shape. Serialized types live in
 `shared/contract/*` and are shared by the mobile client and the server; server-only request shapes

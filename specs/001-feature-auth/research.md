@@ -1,6 +1,6 @@
-# Research: Login Screen
+# Research: Authentication
 
-**Branch**: `feature/001-login-screen` | **Feature ID**: `001-login-screen` | **Refreshed**: 2026-08-15
+**Branch**: `feature/001-feature-auth` | **Feature ID**: `001-feature-auth` | **Refreshed**: 2026-08-15
 
 The decisions behind the plan, as implemented. Superseded reasoning is dropped rather than kept as
 archaeology; what remains is what a reader needs to change this code safely.

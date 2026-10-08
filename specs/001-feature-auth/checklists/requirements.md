@@ -1,8 +1,8 @@
-# Specification Quality Checklist: Login Screen
+# Specification Quality Checklist: Authentication
 
 **Purpose**: Validate specification completeness and quality
 **Created**: 2026-08-13 | **Refreshed**: 2026-08-15
-**Branch**: `feature/001-login-screen` | **Feature**: [spec.md](../spec.md)
+**Branch**: `feature/001-feature-auth` | **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 
