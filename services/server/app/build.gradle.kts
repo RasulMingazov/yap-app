@@ -8,6 +8,7 @@ dependencies {
     implementation(project(":services:server:core-security"))
     implementation(project(":services:server:feature-auth"))
     implementation(project(":shared:contract:common"))
+    implementation(libs.ktor.server.call.logging)
     implementation(libs.ktor.server.forwarded.header)
     implementation(libs.ktor.server.rate.limit)
     implementation(libs.ktor.server.status.pages)

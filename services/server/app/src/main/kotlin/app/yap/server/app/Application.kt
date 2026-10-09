@@ -39,6 +39,7 @@ internal fun Application.serverModule(
         requestsPerMinute = config.authRateLimitRequestsPerMinute,
         trustProxyHeaders = config.trustProxyHeaders,
     )
+    installRequestLogging()
 
     routing {
         get("/health") { call.respondText("ok") }
