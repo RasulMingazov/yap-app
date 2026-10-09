@@ -12,6 +12,7 @@ dependencies {
     implementation(libs.ktor.server.rate.limit)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.slf4j.api)
+    runtimeOnly(libs.logback.classic)
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotlin.test)
