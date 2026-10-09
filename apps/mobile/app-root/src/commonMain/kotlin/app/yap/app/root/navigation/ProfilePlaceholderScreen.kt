@@ -10,7 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.yap.core.design.theme.YapTheme
 
-/** The Profile tab stays an `app-root` placeholder until `feature-profile` (research R8). */
 @Composable
 internal fun ProfilePlaceholderScreen() {
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {

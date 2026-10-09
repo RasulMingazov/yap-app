@@ -43,9 +43,10 @@ internal class RootBackStack(
         val tab = MainTab.ofKey(key)
         if (tab != null) {
             selectTab(tab)
-        } else {
-            tail.update { pushed -> if (pushed.lastOrNull() == key) pushed else pushed + key }
+            return
         }
+
+        tail.update { pushed -> if (pushed.lastOrNull() == key) pushed else pushed + key }
     }
 
     fun selectTab(tab: MainTab) {

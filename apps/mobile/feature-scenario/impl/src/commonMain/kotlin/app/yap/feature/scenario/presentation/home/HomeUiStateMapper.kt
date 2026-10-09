@@ -1,6 +1,5 @@
 package app.yap.feature.scenario.presentation.home
 
-import app.yap.feature.scenario.api.entity.OverviewState
 import app.yap.feature.scenario.api.entity.Scenario
 import app.yap.feature.scenario.api.entity.ScenarioOverview
 import app.yap.feature.scenario.api.entity.ScenarioStatus
@@ -15,10 +14,10 @@ private const val LOCKED_PREVIEW_COUNT = 4
 internal class HomeUiStateMapper {
 
     fun map(dataState: DataState): UiState = UiState(
-        content = when (val overview = dataState.overview) {
-            is OverviewState.Loading -> UiState.Content.Loading
-            is OverviewState.Unavailable -> UiState.Content.Unavailable
-            is OverviewState.Ready -> ready(overview.overview)
+        content = when {
+            dataState.overview != null -> ready(dataState.overview)
+            dataState.isUnavailable -> UiState.Content.Unavailable
+            else -> UiState.Content.Loading
         },
     )
 

@@ -5,7 +5,6 @@ import app.yap.core.network.ApiResult
 import app.yap.feature.auth.api.entity.AuthSessionState
 import app.yap.feature.scenario.STUB_ACCOUNT_ID
 import app.yap.feature.scenario.StubObserveAuthSessionStateUseCase
-import app.yap.feature.scenario.api.entity.OverviewState
 import app.yap.feature.scenario.api.entity.ScenarioId
 import app.yap.feature.scenario.api.entity.ScenarioStatus
 import app.yap.feature.scenario.data.CurrentDate
@@ -17,7 +16,8 @@ import app.yap.feature.scenario.domain.repository.ActivationResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
@@ -29,104 +29,99 @@ import kotlinx.coroutines.test.runTest
 internal class DefaultScenarioRepositoryTest {
 
     @Test
-    fun `GIVEN a snapshot of this account WHEN the state is observed THEN content is ready without network`() =
+    fun `GIVEN a snapshot of this account WHEN the overview is read from cache THEN it is served without network`() =
         runTest {
             val env = Environment(this, snapshot = snapshotOf(accountId = STUB_ACCOUNT_ID))
 
-            val state = env.repository.state.first()
+            val overview = env.repository.get(forceUpdate = false)
 
-            assertIs<OverviewState.Ready>(state)
-            assertEquals(expected = StubScenarioState.FREE_TITLE, actual = state.overview.scenarios.first().title)
+            assertEquals(expected = StubScenarioState.FREE_TITLE, actual = overview?.scenarios?.first()?.title)
             env.remoteDataSource.stateCall.notCalled()
             env.cleanUp()
         }
 
     @Test
-    fun `GIVEN no snapshot WHEN a refresh is in flight THEN the state is loading`() = runTest {
+    fun `GIVEN no snapshot WHEN the overview is read from cache THEN there is nothing and no network`() = runTest {
         val env = Environment(this)
 
-        assertIs<OverviewState.Loading>(env.repository.state.first())
+        val overview = env.repository.get(forceUpdate = false)
+
+        assertNull(overview)
+        env.remoteDataSource.stateCall.notCalled()
         env.cleanUp()
     }
 
     @Test
-    fun `GIVEN no snapshot WHEN the refresh fails THEN the state is unavailable`() = runTest {
-        val env = Environment(this)
-        env.remoteDataSource.stateCall.returns(ApiResult.Failure(ApiError.Unavailable))
+    fun `GIVEN a forced update WHEN the server answers THEN the overview comes back and lands in the snapshot`() =
+        runTest {
+            val env = Environment(this)
 
-        val result = env.repository.refresh()
+            val overview = env.repository.get(forceUpdate = true)
 
-        assertTrue(result.isFailure)
-        assertIs<OverviewState.Unavailable>(env.repository.state.first())
-        env.cleanUp()
-    }
+            assertEquals(expected = StubScenarioState.FREE_TITLE, actual = overview?.scenarios?.first()?.title)
+            assertEquals(expected = STUB_ACCOUNT_ID, actual = env.snapshotStore.snapshots.value?.accountId)
+            assertEquals(expected = overview, actual = env.repository.observe().first())
+            env.cleanUp()
+        }
 
     @Test
-    fun `GIVEN shown content WHEN a refresh fails THEN the failure stays silent and content stands`() = runTest {
+    fun `GIVEN a snapshot WHEN a forced update fails THEN the cached overview stands and is returned`() = runTest {
         val env = Environment(this, snapshot = snapshotOf(accountId = STUB_ACCOUNT_ID))
         env.remoteDataSource.stateCall.returns(ApiResult.Failure(ApiError.Unavailable))
 
-        env.repository.refresh()
+        val overview = env.repository.get(forceUpdate = true)
 
-        val state = env.repository.state.first()
-        assertIs<OverviewState.Ready>(state)
-        assertEquals(expected = false, actual = state.isRefreshing)
+        assertNotNull(overview)
+        assertEquals(expected = STUB_ACCOUNT_ID, actual = env.snapshotStore.snapshots.value?.accountId)
         env.cleanUp()
     }
 
     @Test
-    fun `GIVEN a successful refresh WHEN it lands THEN state and snapshot hold the fresh aggregate`() = runTest {
+    fun `GIVEN no snapshot WHEN a forced update fails THEN there is nothing to show`() = runTest {
         val env = Environment(this)
+        env.remoteDataSource.stateCall.returns(ApiResult.Failure(ApiError.Unavailable))
 
-        val result = env.repository.refresh()
+        val overview = env.repository.get(forceUpdate = true)
 
-        assertTrue(result.isSuccess)
-        assertIs<OverviewState.Ready>(env.repository.state.first())
-        assertEquals(expected = STUB_ACCOUNT_ID, actual = env.snapshotStore.stored?.accountId)
+        assertNull(overview)
         env.cleanUp()
     }
 
     @Test
-    fun `GIVEN an activation WHEN the server answers with the aggregate THEN state and snapshot are replaced`() =
-        runTest {
-            val env = Environment(this)
-            val activated = StubScenarioState.stubStateDto(
-                scenarios = listOf(StubScenarioState.stubActiveScenarioDto(), StubScenarioState.stubLockedScenarioDto()),
-                slotsUsed = 1,
-            )
-            env.remoteDataSource.activateCall.returns(ApiResult.Success(activated))
+    fun `GIVEN an activation WHEN the server answers with the aggregate THEN the snapshot is replaced`() = runTest {
+        val env = Environment(this)
+        val activated = StubScenarioState.stubStateDto(
+            scenarios = listOf(StubScenarioState.stubActiveScenarioDto(), StubScenarioState.stubLockedScenarioDto()),
+            slotsUsed = 1,
+        )
+        env.remoteDataSource.activateCall.returns(ApiResult.Success(activated))
 
-            val result = env.repository.activate(ScenarioId(StubScenarioState.FREE_ID))
+        val result = env.repository.activate(ScenarioId(StubScenarioState.FREE_ID))
 
-            assertIs<ActivationResult.Opened>(result)
-            val state = env.repository.state.first()
-            assertIs<OverviewState.Ready>(state)
-            assertIs<ScenarioStatus.Active>(state.overview.scenarios.first().status)
-            assertEquals(expected = 1, actual = env.snapshotStore.stored?.state?.slotsUsed)
-            env.cleanUp()
-        }
+        assertIs<ActivationResult.Opened>(result)
+        assertIs<ScenarioStatus.Active>(env.repository.observe().first()?.scenarios?.first()?.status)
+        assertEquals(expected = 1, actual = env.snapshotStore.snapshots.value?.state?.slotsUsed)
+        env.cleanUp()
+    }
 
     @Test
-    fun `GIVEN another account's snapshot WHEN the state is observed THEN it is not shown`() = runTest {
+    fun `GIVEN another account's snapshot WHEN the overview is observed THEN it is not shown`() = runTest {
         val env = Environment(this, snapshot = snapshotOf(accountId = "someone-else"))
 
-        assertIs<OverviewState.Loading>(env.repository.state.first())
+        assertNull(env.repository.observe().first())
         env.cleanUp()
     }
 
     @Test
-    fun `GIVEN a stored snapshot WHEN the user logs out THEN the offline copy is gone and state resets`() =
-        runTest {
-            val env = Environment(this, snapshot = snapshotOf(accountId = STUB_ACCOUNT_ID))
-            assertIs<OverviewState.Ready>(env.repository.state.first())
+    fun `GIVEN a stored snapshot WHEN the user logs out THEN the offline copy is gone`() = runTest {
+        val env = Environment(this, snapshot = snapshotOf(accountId = STUB_ACCOUNT_ID))
 
-            env.observeAuthSessionStateUseCase.authSessionStates.value = AuthSessionState.LoggedOut
-            runCurrent()
+        env.observeAuthSessionStateUseCase.authSessionStates.value = AuthSessionState.LoggedOut
+        runCurrent()
 
-            assertEquals(expected = null, actual = env.snapshotStore.stored)
-            assertIs<OverviewState.Loading>(env.repository.state.first())
-            env.cleanUp()
-        }
+        assertNull(env.snapshotStore.snapshots.value)
+        env.cleanUp()
+    }
 
     @Test
     fun `GIVEN a slot limit refusal WHEN activating THEN the result names the limit`() = runTest {
@@ -157,7 +152,6 @@ internal class DefaultScenarioRepositoryTest {
     private fun snapshotOf(accountId: String): OverviewSnapshotLocal = OverviewSnapshotLocal(
         accountId = accountId,
         state = StubScenarioState.stubStateDto(),
-        todayIsoDate = StubScenarioState.TODAY,
     )
 
     private class Environment(

@@ -49,8 +49,6 @@ data class YapColors(
     val track: Color,
 )
 
-// Both palettes are lifted from the design prototypes' theme dictionaries
-// (feature_auth / feature_main .dc.html) — never guessed (research R9).
 internal val LightYapColors = YapColors(
     accent = Color(0xFF0B0A0D),
     accentFill = Color(0xFFD9FF57),

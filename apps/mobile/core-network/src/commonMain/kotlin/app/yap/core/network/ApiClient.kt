@@ -65,8 +65,6 @@ class ApiClient(private val networkClient: NetworkClient) {
         null
     }
 
-    // 403 is a business refusal (e.g. `access_required`), not a credential problem: its code must
-    // reach the caller, and it must not count as `Unauthorized`, which triggers a token refresh.
     private suspend fun HttpResponse.toError(): ApiError = when {
         status == HttpStatusCode.Unauthorized -> ApiError.Unauthorized
         status in TRANSIENT_STATUSES -> ApiError.Unavailable

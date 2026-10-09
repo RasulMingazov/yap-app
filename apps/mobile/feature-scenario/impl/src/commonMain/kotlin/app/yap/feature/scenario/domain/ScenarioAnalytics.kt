@@ -1,6 +1,5 @@
 package app.yap.feature.scenario.domain
 
-/** The seven FR-050 event names; each fires exactly once per triggering action (SC-005). */
 internal object ScenarioAnalytics {
 
     const val HOME_VIEW = "home_view"

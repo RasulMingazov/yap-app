@@ -4,10 +4,6 @@ import java.time.LocalDate
 
 internal object StreakCalculation {
 
-    /**
-     * The run of consecutive practised dates anchored at [today] when today is practised and at
-     * yesterday otherwise, so an existing run stays visible all morning (data-model.md).
-     */
     fun streakDays(practisedDates: Set<LocalDate>, today: LocalDate): Int {
         val anchor = when {
             today in practisedDates -> today

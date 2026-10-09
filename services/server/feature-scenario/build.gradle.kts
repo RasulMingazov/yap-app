@@ -13,8 +13,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.slf4j.api)
 
-    // V2's foreign keys reference 001's `users` table; the auth module on the test classpath
-    // lets Flyway apply V1 before V2, mirroring the production migration order.
     testImplementation(project(":services:server:feature-auth"))
     testImplementation(libs.flyway.core)
     testImplementation(libs.flyway.database.postgresql)

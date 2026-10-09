@@ -1,14 +1,14 @@
 package app.yap.feature.scenario.domain.repository
 
-import app.yap.feature.scenario.api.entity.OverviewState
 import app.yap.feature.scenario.api.entity.ScenarioId
+import app.yap.feature.scenario.api.entity.ScenarioOverview
 import kotlinx.coroutines.flow.Flow
 
 internal interface ScenarioRepository {
 
-    val state: Flow<OverviewState>
+    fun observe(): Flow<ScenarioOverview?>
 
-    suspend fun refresh(): Result<Unit>
+    suspend fun get(forceUpdate: Boolean): ScenarioOverview?
 
     suspend fun activate(id: ScenarioId): ActivationResult
 

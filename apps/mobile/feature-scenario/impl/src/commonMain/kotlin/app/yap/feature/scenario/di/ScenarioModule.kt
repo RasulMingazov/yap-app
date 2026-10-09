@@ -3,6 +3,7 @@ package app.yap.feature.scenario.di
 import app.yap.core.design.navigation.bottomSheetScene
 import app.yap.feature.scenario.api.HomeNavKey
 import app.yap.feature.scenario.api.ScenariosNavKey
+import app.yap.feature.scenario.api.usecase.GetScenarioOverviewUseCase
 import app.yap.feature.scenario.api.usecase.ObserveScenarioOverviewUseCase
 import app.yap.feature.scenario.data.CurrentDate
 import app.yap.feature.scenario.data.SystemCurrentDate
@@ -15,14 +16,13 @@ import app.yap.feature.scenario.domain.gateway.AccessGateway
 import app.yap.feature.scenario.domain.gateway.PaywallGateway
 import app.yap.feature.scenario.domain.gateway.SessionGateway
 import app.yap.feature.scenario.domain.repository.ScenarioRepository
+import app.yap.feature.scenario.domain.usecase.DefaultGetScenarioOverviewUseCase
 import app.yap.feature.scenario.domain.usecase.DefaultObserveScenarioOverviewUseCase
 import app.yap.feature.scenario.domain.usecase.DefaultOpenPaywallUseCase
 import app.yap.feature.scenario.domain.usecase.DefaultOpenScenarioUseCase
-import app.yap.feature.scenario.domain.usecase.DefaultRefreshOverviewUseCase
 import app.yap.feature.scenario.domain.usecase.OpenPaywallUseCase
 import app.yap.feature.scenario.domain.usecase.OpenScenarioUseCase
 import app.yap.feature.scenario.domain.usecase.DefaultRepeatScenarioUseCase
-import app.yap.feature.scenario.domain.usecase.RefreshOverviewUseCase
 import app.yap.feature.scenario.domain.usecase.RepeatScenarioUseCase
 import app.yap.feature.scenario.presentation.home.HomeUiStateMapper
 import app.yap.feature.scenario.presentation.home.HomeViewModel
@@ -83,11 +83,11 @@ fun featureScenarioModule(): Module = module {
     viewModel {
         HomeViewModel(
             analyticsTracker = get(),
+            getScenarioOverviewUseCase = get(),
             navigator = get(),
             observeScenarioOverviewUseCase = get(),
             openPaywallUseCase = get(),
             openScenarioUseCase = get(),
-            refreshOverviewUseCase = get(),
             uiStateMapper = get(),
         )
     }
@@ -97,10 +97,10 @@ fun featureScenarioModule(): Module = module {
     viewModel {
         ScenariosViewModel(
             analyticsTracker = get(),
+            getScenarioOverviewUseCase = get(),
             navigator = get(),
             observeScenarioOverviewUseCase = get(),
             openScenarioUseCase = get(),
-            refreshOverviewUseCase = get(),
             repeatScenarioUseCase = get(),
             uiStateMapper = get(),
         )
@@ -122,7 +122,7 @@ fun featureScenarioModule(): Module = module {
 private fun Module.bindUseCases() {
     factory<ObserveScenarioOverviewUseCase> { DefaultObserveScenarioOverviewUseCase(scenarioRepository = get()) }
 
-    factory<RefreshOverviewUseCase> { DefaultRefreshOverviewUseCase(scenarioRepository = get()) }
+    factory<GetScenarioOverviewUseCase> { DefaultGetScenarioOverviewUseCase(scenarioRepository = get()) }
 
     factory<OpenScenarioUseCase> {
         DefaultOpenScenarioUseCase(

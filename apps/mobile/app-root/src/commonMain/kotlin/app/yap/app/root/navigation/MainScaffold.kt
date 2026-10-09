@@ -103,12 +103,12 @@ internal fun MainScaffold() {
     }
 }
 
-/** The design's collapsing section title: 64 → 44 px with a scale as content scrolls under it. */
 @Composable
 private fun CollapsingTitle(title: String, content: @Composable () -> Unit) {
     val collapsed = remember { mutableFloatStateOf(0f) }
     val connection = remember {
         object : NestedScrollConnection {
+
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 collapsed.value = (collapsed.value - available.y).coerceIn(0f, COLLAPSE_RANGE_PX)
                 return Offset.Zero

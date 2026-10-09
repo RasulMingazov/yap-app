@@ -1,5 +1,7 @@
 package app.yap.feature.scenario.data.local
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.Json
 import org.koin.core.scope.Scope
 import platform.Foundation.NSUserDefaults
@@ -11,17 +13,21 @@ internal actual fun Scope.createOverviewSnapshotStore(): OverviewSnapshotStore =
 internal class IosOverviewSnapshotStore : OverviewSnapshotStore {
 
     private val defaults = NSUserDefaults.standardUserDefaults
+    private val snapshots = MutableStateFlow(stored())
+
+    override fun observe(): Flow<OverviewSnapshotLocal?> = snapshots
 
     override suspend fun clear() {
         defaults.removeObjectForKey(STORAGE_KEY)
-    }
-
-    override suspend fun read(): OverviewSnapshotLocal? {
-        val stored = defaults.stringForKey(STORAGE_KEY) ?: return null
-        return runCatching { Json.decodeFromString<OverviewSnapshotLocal>(stored) }.getOrNull()
+        snapshots.value = null
     }
 
     override suspend fun write(snapshot: OverviewSnapshotLocal) {
         defaults.setObject(Json.encodeToString(snapshot), forKey = STORAGE_KEY)
+        snapshots.value = snapshot
+    }
+
+    private fun stored(): OverviewSnapshotLocal? = defaults.stringForKey(STORAGE_KEY)?.let { stored ->
+        runCatching { Json.decodeFromString<OverviewSnapshotLocal>(stored) }.getOrNull()
     }
 }

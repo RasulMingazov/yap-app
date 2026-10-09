@@ -102,7 +102,6 @@ internal fun HomeScreen() {
     }
 }
 
-/** The FR-006 plain progress indicator: the accent — lime in dark, black in light. */
 @Composable
 private fun HomeLoading() {
     val colors = YapTheme.colors

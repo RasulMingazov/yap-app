@@ -20,7 +20,6 @@ import org.koin.compose.koinInject
 
 private val SheetPadding = 20.dp
 
-/** The design's repeat sheet: what resets, what stays, restart or cancel (FR-034, US5). */
 @Composable
 internal fun RepeatConfirmationSheet(key: RepeatConfirmationNavKey) {
     val colors = YapTheme.colors

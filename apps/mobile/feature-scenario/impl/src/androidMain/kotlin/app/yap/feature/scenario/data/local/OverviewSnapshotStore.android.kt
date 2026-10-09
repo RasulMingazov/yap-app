@@ -6,7 +6,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import org.koin.core.scope.Scope
 
@@ -23,13 +24,12 @@ internal class AndroidOverviewSnapshotStore(
 
     private val key = stringPreferencesKey("overview")
 
-    override suspend fun clear() {
-        context.overviewDataStore.edit { preferences -> preferences.remove(key) }
+    override fun observe(): Flow<OverviewSnapshotLocal?> = context.overviewDataStore.data.map { preferences ->
+        preferences[key]?.let { stored -> runCatching { Json.decodeFromString<OverviewSnapshotLocal>(stored) }.getOrNull() }
     }
 
-    override suspend fun read(): OverviewSnapshotLocal? {
-        val stored = context.overviewDataStore.data.firstOrNull()?.get(key) ?: return null
-        return runCatching { Json.decodeFromString<OverviewSnapshotLocal>(stored) }.getOrNull()
+    override suspend fun clear() {
+        context.overviewDataStore.edit { preferences -> preferences.remove(key) }
     }
 
     override suspend fun write(snapshot: OverviewSnapshotLocal) {

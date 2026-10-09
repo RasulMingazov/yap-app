@@ -1,6 +1,5 @@
 package app.yap.feature.scenario.api.entity
 
-/** The user's progress fact; `Scenario.locked` is the orthogonal access fact (research R12). */
 sealed interface ScenarioStatus {
 
     data object Available : ScenarioStatus

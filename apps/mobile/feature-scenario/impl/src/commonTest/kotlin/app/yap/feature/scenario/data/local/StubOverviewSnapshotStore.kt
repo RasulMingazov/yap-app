@@ -1,23 +1,21 @@
 package app.yap.feature.scenario.data.local
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+
 internal class StubOverviewSnapshotStore(
     snapshot: OverviewSnapshotLocal? = null,
 ) : OverviewSnapshotStore {
 
-    var stored: OverviewSnapshotLocal? = snapshot
-        private set
+    val snapshots = MutableStateFlow(snapshot)
 
-    var clearCount: Int = 0
-        private set
+    override fun observe(): Flow<OverviewSnapshotLocal?> = snapshots
 
     override suspend fun clear() {
-        clearCount++
-        stored = null
+        snapshots.value = null
     }
 
-    override suspend fun read(): OverviewSnapshotLocal? = stored
-
     override suspend fun write(snapshot: OverviewSnapshotLocal) {
-        stored = snapshot
+        snapshots.value = snapshot
     }
 }

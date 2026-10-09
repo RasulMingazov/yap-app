@@ -65,7 +65,6 @@ internal fun withScenarioApplication(
                 install(ContentNegotiation) {
                     json(Json { ignoreUnknownKeys = true; explicitNulls = false })
                 }
-                // Mirrors the app module's error mapping for the codes this feature answers with.
                 install(StatusPages) {
                     exception<ScenarioFailure> { call, failure ->
                         val (status, code) = when (failure) {

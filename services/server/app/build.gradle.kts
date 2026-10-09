@@ -24,7 +24,6 @@ dependencies {
     testImplementation(libs.ktor.client.mock)
     testImplementation(libs.ktor.serialization.json)
     testImplementation(libs.ktor.server.test.host)
-    // The wiring guard runs the real graph, and the real graph reaches a real database.
     testImplementation(libs.postgresql)
     testImplementation(libs.testcontainers.junit.jupiter)
     testImplementation(libs.testcontainers.postgresql)

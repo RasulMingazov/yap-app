@@ -1,30 +1,33 @@
 package app.yap.feature.scenario.domain.usecase
 
-import app.yap.feature.scenario.api.entity.OverviewState
 import app.yap.feature.scenario.api.entity.Scenario
+import app.yap.feature.scenario.api.entity.ScenarioOverview
+import app.yap.feature.scenario.api.entity.StubScenarioOverview
+import app.yap.feature.scenario.api.usecase.GetScenarioOverviewUseCase
 import app.yap.feature.scenario.api.usecase.ObserveScenarioOverviewUseCase
 import app.yap.feature.scenario.domain.gateway.PaywallOrigin
 import app.yap.feature.scenario.domain.gateway.PaywallSource
-import io.github.rasulmingazov.stubcall.StubCall0
 import io.github.rasulmingazov.stubcall.StubCall1
 import io.github.rasulmingazov.stubcall.StubCall2
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 internal class StubObserveScenarioOverviewUseCase(
-    state: OverviewState = OverviewState.Loading,
+    overview: ScenarioOverview? = null,
 ) : ObserveScenarioOverviewUseCase {
 
-    val states = MutableStateFlow(state)
+    val overviews = MutableStateFlow(overview)
 
-    override fun invoke(): Flow<OverviewState> = states
+    override fun invoke(): Flow<ScenarioOverview?> = overviews
 }
 
-internal class StubRefreshOverviewUseCase : RefreshOverviewUseCase {
+internal class StubGetScenarioOverviewUseCase(
+    overview: ScenarioOverview? = StubScenarioOverview.stubOverview(),
+) : GetScenarioOverviewUseCase {
 
-    val invokeCall = StubCall0.unit()
+    val invokeCall = StubCall1.returns<Boolean, ScenarioOverview?>(overview)
 
-    override suspend fun invoke() = invokeCall.invoke()
+    override suspend fun invoke(forceUpdate: Boolean): ScenarioOverview? = invokeCall.invoke(forceUpdate)
 }
 
 internal class StubOpenScenarioUseCase(

@@ -17,7 +17,6 @@ internal interface RepeatScenarioUseCase {
     suspend operator fun invoke(scenario: Scenario): OpenScenarioOutcome
 }
 
-/** The confirmed restart (FR-034): attempt + 1 on the server, then straight into practice. */
 internal class DefaultRepeatScenarioUseCase(
     private val analyticsTracker: AnalyticsTracker,
     private val paywallGateway: PaywallGateway,

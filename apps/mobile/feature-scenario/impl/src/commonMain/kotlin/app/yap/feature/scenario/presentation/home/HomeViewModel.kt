@@ -6,9 +6,10 @@ import app.yap.core.common.analytics.AnalyticsTracker
 import app.yap.core.common.navigation.Navigator
 import app.yap.core.common.presentation.BaseViewModel
 import app.yap.feature.scenario.api.ScenariosNavKey
-import app.yap.feature.scenario.api.entity.OverviewState
 import app.yap.feature.scenario.api.entity.Scenario
 import app.yap.feature.scenario.api.entity.ScenarioId
+import app.yap.feature.scenario.api.entity.ScenarioOverview
+import app.yap.feature.scenario.api.usecase.GetScenarioOverviewUseCase
 import app.yap.feature.scenario.api.usecase.ObserveScenarioOverviewUseCase
 import app.yap.feature.scenario.domain.ScenarioAnalytics
 import app.yap.feature.scenario.domain.gateway.PaywallOrigin
@@ -16,7 +17,6 @@ import app.yap.feature.scenario.domain.gateway.PaywallSource
 import app.yap.feature.scenario.domain.usecase.OpenPaywallUseCase
 import app.yap.feature.scenario.domain.usecase.OpenScenarioOutcome
 import app.yap.feature.scenario.domain.usecase.OpenScenarioUseCase
-import app.yap.feature.scenario.domain.usecase.RefreshOverviewUseCase
 import app.yap.feature.scenario.presentation.common.ScenarioCopy
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -28,11 +28,11 @@ import kotlinx.coroutines.launch
 
 internal class HomeViewModel(
     private val analyticsTracker: AnalyticsTracker,
+    private val getScenarioOverviewUseCase: GetScenarioOverviewUseCase,
     private val navigator: Navigator,
     private val observeScenarioOverviewUseCase: ObserveScenarioOverviewUseCase,
     private val openPaywallUseCase: OpenPaywallUseCase,
     private val openScenarioUseCase: OpenScenarioUseCase,
-    private val refreshOverviewUseCase: RefreshOverviewUseCase,
     private val uiStateMapper: HomeUiStateMapper,
 ) : BaseViewModel() {
 
@@ -57,20 +57,26 @@ internal class HomeViewModel(
         is Event.AddSlotClicked -> navigator.navigate(ScenariosNavKey)
         is Event.LockedPreviewClicked -> onLockedPreviewClicked(event.id)
         is Event.LockedPreviewAllClicked -> onLockedPreviewAllClicked()
-        is Event.RetryClicked -> refresh()
+        is Event.RetryClicked -> load()
     }
 
     private fun onScreenShown() {
         analyticsTracker.track(AnalyticsEvent(name = ScenarioAnalytics.HOME_VIEW))
-        refresh()
+        load()
     }
 
-    private fun refresh() {
-        viewModelScope.launch { refreshOverviewUseCase() }
+    private fun load() {
+        if (dataState.value.isLoading) return
+
+        dataState.update { state -> state.copy(isLoading = true, isUnavailable = false) }
+        viewModelScope.launch {
+            val overview = getScenarioOverviewUseCase(forceUpdate = true)
+            dataState.update { state -> state.copy(isLoading = false, isUnavailable = overview == null) }
+        }
     }
 
     private fun onPrimaryClicked() {
-        val overview = (dataState.value.overview as? OverviewState.Ready)?.overview ?: return
+        val overview = dataState.value.overview ?: return
         when (val hero = HomeHeroResolver.resolve(overview)) {
             is HomeHero.StartFree -> open(hero.scenario, PaywallOrigin.LockedRow)
             is HomeHero.Continue -> {
@@ -122,10 +128,7 @@ internal class HomeViewModel(
     }
 
     private fun scenarioOf(id: ScenarioId): Scenario? =
-        (dataState.value.overview as? OverviewState.Ready)
-            ?.overview
-            ?.scenarios
-            ?.firstOrNull { scenario -> scenario.id == id }
+        dataState.value.overview?.scenarios?.firstOrNull { scenario -> scenario.id == id }
 
     override fun onCleared() {
         super.onCleared()
@@ -133,8 +136,10 @@ internal class HomeViewModel(
     }
 
     data class DataState(
+        val isLoading: Boolean = false,
         val isOpening: Boolean = false,
-        val overview: OverviewState = OverviewState.Loading,
+        val isUnavailable: Boolean = false,
+        val overview: ScenarioOverview? = null,
     )
 
     data class UiState(val content: Content) {

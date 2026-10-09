@@ -7,7 +7,6 @@ plugins {
 }
 
 kotlin {
-    // Koin's `verify()` is JVM-only, so the wiring guards run on the Android host compilation.
     android {
         withHostTest {}
     }

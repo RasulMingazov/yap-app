@@ -1,7 +1,3 @@
--- Scenarios and per-user progress (002-feature-scenario).
--- The scenario list is seeded here so new content ships without an app release (research R1);
--- placeholder objective titles are replaced by the content set authored elsewhere.
-
 create table scenario (
     id text primary key,
     title text not null,
@@ -27,7 +23,6 @@ create table user_scenario (
     primary key (user_id, scenario_id)
 );
 
--- Insert-only achievement facts: progress can only move forward (FR-005).
 create table user_objective (
     user_id uuid not null references users (id) on delete cascade,
     scenario_id text not null,
@@ -37,20 +32,17 @@ create table user_objective (
     primary key (user_id, scenario_id, attempt, objective_order)
 );
 
--- Streak facts: device-local dates as reported, never deleted (research R4, R10).
 create table practice_day (
     user_id uuid not null references users (id) on delete cascade,
     local_date date not null,
     primary key (user_id, local_date)
 );
 
--- Also the per-user lock anchor serializing progress mutations (research R5).
 create table user_stats (
     user_id uuid primary key references users (id) on delete cascade,
     practice_seconds bigint not null default 0
 );
 
--- Idempotency ledger: one progress report is applied at most once (research R11).
 create table progress_report (
     user_id uuid not null references users (id) on delete cascade,
     report_id uuid not null,

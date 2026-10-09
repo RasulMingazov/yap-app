@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.dp
 private const val VIEWPORT = 24f
 private const val STROKE = 2.2f
 
-// The three tab glyphs as drawn in `feature_main.dc.html` (stroke icons, 22×22 on a 24 grid).
 internal val HomeTabIcon: ImageVector = strokeIcon("main.tab.home") {
     path("M4 10.5 L12 4 L20 10.5 V19 A1 1 0 0 1 19 20 H14.5 V14.5 H9.5 V20 H5 A1 1 0 0 1 4 19 Z")
 }

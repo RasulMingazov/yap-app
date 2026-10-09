@@ -4,11 +4,7 @@ private const val DAYS_PER_ERA = 146_097L
 private const val YEARS_PER_ERA = 400L
 private const val EPOCH_SHIFT = 719_468L
 
-/**
- * Proleptic-Gregorian date arithmetic over ISO `YYYY-MM-DD` strings — enough for the streak week
- * without a date-time dependency (civil-from-days / days-from-civil algorithms).
- */
-@Suppress("MagicNumber") // the civil-calendar algorithm is its constants
+@Suppress("MagicNumber")
 internal object IsoDates {
 
     fun toEpochDay(isoDate: String): Long {
@@ -36,6 +32,5 @@ internal object IsoDates {
             day.toString().padStart(2, '0')
     }
 
-    /** ISO day of week: 1 = Monday … 7 = Sunday. */
     fun isoDayOfWeek(epochDay: Long): Int = ((epochDay + 3).mod(7L)).toInt() + 1
 }

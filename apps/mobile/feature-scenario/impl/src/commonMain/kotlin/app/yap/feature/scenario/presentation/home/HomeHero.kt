@@ -4,7 +4,6 @@ import app.yap.feature.scenario.api.entity.Scenario
 import app.yap.feature.scenario.api.entity.ScenarioOverview
 import app.yap.feature.scenario.api.entity.ScenarioStatus
 
-/** The five FR-010 hero variants; exactly one applies to any overview. */
 internal sealed interface HomeHero {
 
     data class StartFree(val scenario: Scenario) : HomeHero

@@ -197,6 +197,7 @@ internal class ApiClientTest {
     private data class PayloadDto(val value: String)
 
     private companion object {
+
         const val BASE_URL = "https://api.example.com"
         const val PATH = "/v1/probe"
         const val VALUE = "payload"

@@ -5,16 +5,16 @@ import app.yap.core.common.analytics.AnalyticsEvent
 import app.yap.core.common.analytics.AnalyticsTracker
 import app.yap.core.common.navigation.Navigator
 import app.yap.core.common.presentation.BaseViewModel
-import app.yap.feature.scenario.api.entity.OverviewState
 import app.yap.feature.scenario.api.entity.Scenario
 import app.yap.feature.scenario.api.entity.ScenarioId
+import app.yap.feature.scenario.api.entity.ScenarioOverview
 import app.yap.feature.scenario.api.entity.ScenarioStatus
+import app.yap.feature.scenario.api.usecase.GetScenarioOverviewUseCase
 import app.yap.feature.scenario.api.usecase.ObserveScenarioOverviewUseCase
 import app.yap.feature.scenario.domain.ScenarioAnalytics
 import app.yap.feature.scenario.domain.gateway.PaywallOrigin
 import app.yap.feature.scenario.domain.usecase.OpenScenarioOutcome
 import app.yap.feature.scenario.domain.usecase.OpenScenarioUseCase
-import app.yap.feature.scenario.domain.usecase.RefreshOverviewUseCase
 import app.yap.feature.scenario.domain.usecase.RepeatScenarioUseCase
 import app.yap.feature.scenario.presentation.common.RepeatConfirmationNavKey
 import app.yap.feature.scenario.presentation.common.ScenarioCopy
@@ -28,10 +28,10 @@ import kotlinx.coroutines.launch
 
 internal class ScenariosViewModel(
     private val analyticsTracker: AnalyticsTracker,
+    private val getScenarioOverviewUseCase: GetScenarioOverviewUseCase,
     private val navigator: Navigator,
     private val observeScenarioOverviewUseCase: ObserveScenarioOverviewUseCase,
     private val openScenarioUseCase: OpenScenarioUseCase,
-    private val refreshOverviewUseCase: RefreshOverviewUseCase,
     private val repeatScenarioUseCase: RepeatScenarioUseCase,
     private val uiStateMapper: ScenariosUiStateMapper,
 ) : BaseViewModel() {
@@ -55,16 +55,22 @@ internal class ScenariosViewModel(
         is Event.FilterSelected -> onFilterSelected(event.filter)
         is Event.RowClicked -> onRowClicked(event.id)
         is Event.RepeatConfirmed -> onRepeatConfirmed(event.id)
-        is Event.RetryClicked -> refresh()
+        is Event.RetryClicked -> load()
     }
 
     private fun onScreenShown() {
         analyticsTracker.track(AnalyticsEvent(name = ScenarioAnalytics.SCENARIOS_VIEW))
-        refresh()
+        load()
     }
 
-    private fun refresh() {
-        viewModelScope.launch { refreshOverviewUseCase() }
+    private fun load() {
+        if (dataState.value.isLoading) return
+
+        dataState.update { state -> state.copy(isLoading = true, isUnavailable = false) }
+        viewModelScope.launch {
+            val overview = getScenarioOverviewUseCase(forceUpdate = true)
+            dataState.update { state -> state.copy(isLoading = false, isUnavailable = overview == null) }
+        }
     }
 
     private fun onFilterSelected(filter: ScenarioFilter) {
@@ -78,7 +84,7 @@ internal class ScenariosViewModel(
     }
 
     private fun onRowClicked(id: ScenarioId) {
-        val overview = (dataState.value.overview as? OverviewState.Ready)?.overview ?: return
+        val overview = dataState.value.overview ?: return
         val scenario = overview.scenarios.firstOrNull { candidate -> candidate.id == id } ?: return
 
         if (scenario.isDeclinedBySlotLimit(hasFreeSlot = overview.slots.free > 0)) {
@@ -102,7 +108,7 @@ internal class ScenariosViewModel(
     }
 
     private fun onRepeatConfirmed(id: ScenarioId) {
-        val overview = (dataState.value.overview as? OverviewState.Ready)?.overview ?: return
+        val overview = dataState.value.overview ?: return
         val scenario = overview.scenarios.firstOrNull { candidate -> candidate.id == id } ?: return
         if (dataState.value.isOpening) return
 
@@ -146,8 +152,10 @@ internal class ScenariosViewModel(
 
     data class DataState(
         val filter: ScenarioFilter = ScenarioFilter.All,
+        val isLoading: Boolean = false,
         val isOpening: Boolean = false,
-        val overview: OverviewState = OverviewState.Loading,
+        val isUnavailable: Boolean = false,
+        val overview: ScenarioOverview? = null,
     )
 
     data class UiState(val content: Content) {

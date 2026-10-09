@@ -1,6 +1,5 @@
 package app.yap.feature.scenario.presentation.scenarios
 
-import app.yap.feature.scenario.api.entity.OverviewState
 import app.yap.feature.scenario.api.entity.Scenario
 import app.yap.feature.scenario.api.entity.ScenarioOverview
 import app.yap.feature.scenario.api.entity.ScenarioStatus
@@ -11,10 +10,10 @@ import app.yap.feature.scenario.presentation.scenarios.ScenariosViewModel.UiStat
 internal class ScenariosUiStateMapper {
 
     fun map(dataState: DataState): UiState = UiState(
-        content = when (val overview = dataState.overview) {
-            is OverviewState.Loading -> UiState.Content.Loading
-            is OverviewState.Unavailable -> UiState.Content.Unavailable
-            is OverviewState.Ready -> ready(overview.overview, dataState.filter)
+        content = when {
+            dataState.overview != null -> ready(dataState.overview, dataState.filter)
+            dataState.isUnavailable -> UiState.Content.Unavailable
+            else -> UiState.Content.Loading
         },
     )
 
@@ -50,7 +49,6 @@ internal class ScenariosUiStateMapper {
         label = label,
     )
 
-    // Grouping derives from the orthogonal status × locked pair (contracts/scenario-api.md).
     private fun groups(overview: ScenarioOverview): List<UiState.GroupUi> {
         val hasFreeSlot = overview.slots.free > 0
         val active = overview.scenarios.filter { it.status is ScenarioStatus.Active }
