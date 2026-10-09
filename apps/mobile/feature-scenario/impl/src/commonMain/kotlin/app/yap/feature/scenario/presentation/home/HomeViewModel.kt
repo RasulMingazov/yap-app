@@ -157,7 +157,6 @@ internal class HomeViewModel(
                 val showFullSlotsNotice: Boolean,
                 val slotAdd: SlotAdd?,
                 val slotsLabel: String?,
-                val streak: StreakBlock,
             ) : Content
         }
 
@@ -182,15 +181,6 @@ internal class HomeViewModel(
         data class LockedPreview(val cards: List<LockedCard>, val moreLabel: String)
 
         data class LockedCard(val id: String, val meta: String, val title: String)
-
-        data class StreakBlock(
-            val note: String,
-            val number: String,
-            val unit: String,
-            val weekDays: List<WeekDayUi>,
-        )
-
-        data class WeekDayUi(val isToday: Boolean, val label: String, val practised: Boolean)
     }
 
     sealed interface News {

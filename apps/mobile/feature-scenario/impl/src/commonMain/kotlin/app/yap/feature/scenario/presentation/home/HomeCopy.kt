@@ -19,11 +19,6 @@ internal object HomeCopy {
     const val ALL_DONE_TITLE = "Все 20 сценариев"
     const val ALL_DONE_META = "Все сценарии закрыты. Новые появятся здесь — прогресс и подписка остаются с вами."
 
-    const val STREAK_NOTE_SAFE = "Серия в безопасности — сегодня уже занимались."
-    const val STREAK_NOTE_KEEP = "Сегодня ещё не занимались — один шаг сохранит серию."
-    const val STREAK_NOTE_START = "Один шаг сегодня — и серия начнётся."
-    const val STREAK_NOTE_AT_RISK = "Завтра серия прервётся — с подпиской её можно продолжить."
-
     const val FULL_SLOTS_NOTICE = "Все пять слотов заняты. Завершите один сценарий, чтобы открыть новый."
     const val LOCKED_PREVIEW_ALL = "Все 19"
 }

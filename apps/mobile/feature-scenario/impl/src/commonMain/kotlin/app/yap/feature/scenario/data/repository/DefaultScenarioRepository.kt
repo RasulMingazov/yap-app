@@ -8,7 +8,6 @@ import app.yap.feature.auth.api.entity.AuthSessionState
 import app.yap.feature.auth.api.usecase.ObserveAuthSessionStateUseCase
 import app.yap.feature.scenario.api.entity.ScenarioId
 import app.yap.feature.scenario.api.entity.ScenarioOverview
-import app.yap.feature.scenario.data.CurrentDate
 import app.yap.feature.scenario.data.local.OverviewSnapshotLocal
 import app.yap.feature.scenario.data.local.OverviewSnapshotStore
 import app.yap.feature.scenario.data.mapper.toDomain
@@ -23,7 +22,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 internal class DefaultScenarioRepository(
-    private val currentDate: CurrentDate,
     private val observeAuthSessionStateUseCase: ObserveAuthSessionStateUseCase,
     private val remoteDataSource: ScenarioRemoteDataSource,
     scope: CoroutineScope,
@@ -43,27 +41,23 @@ internal class DefaultScenarioRepository(
     override suspend fun get(forceUpdate: Boolean): ScenarioOverview? {
         if (!forceUpdate) return snapshotStore.observe().first().toOverview()
 
-        return when (val result = remoteDataSource.state(currentDate.isoDate())) {
+        return when (val result = remoteDataSource.state()) {
             is ApiResult.Success -> save(result.value)
             is ApiResult.Failure -> snapshotStore.observe().first().toOverview()
         }
     }
 
-    override suspend fun activate(id: ScenarioId): ActivationResult =
-        mutate { today -> remoteDataSource.activate(scenarioId = id.value, todayIsoDate = today) }
+    override suspend fun activate(id: ScenarioId): ActivationResult = mutate { remoteDataSource.activate(id.value) }
 
-    override suspend fun repeat(id: ScenarioId): ActivationResult =
-        mutate { today -> remoteDataSource.repeat(scenarioId = id.value, todayIsoDate = today) }
+    override suspend fun repeat(id: ScenarioId): ActivationResult = mutate { remoteDataSource.repeat(id.value) }
 
     private suspend fun OverviewSnapshotLocal?.toOverview(): ScenarioOverview? {
         val snapshot = this ?: return null
         if (snapshot.accountId != currentAccountId()) return null
-        return snapshot.state.toDomain(todayIsoDate = currentDate.isoDate())
+        return snapshot.state.toDomain()
     }
 
-    private suspend fun mutate(
-        call: suspend (todayIsoDate: String) -> ApiResult<ScenarioStateDto>,
-    ): ActivationResult = when (val result = call(currentDate.isoDate())) {
+    private suspend fun mutate(call: suspend () -> ApiResult<ScenarioStateDto>): ActivationResult = when (val result = call()) {
         is ApiResult.Success -> {
             save(result.value)
             ActivationResult.Opened
@@ -74,7 +68,7 @@ internal class DefaultScenarioRepository(
     private suspend fun save(state: ScenarioStateDto): ScenarioOverview? {
         val accountId = currentAccountId() ?: return null
         snapshotStore.write(OverviewSnapshotLocal(accountId = accountId, state = state))
-        return state.toDomain(todayIsoDate = currentDate.isoDate())
+        return state.toDomain()
     }
 
     private suspend fun currentAccountId(): String? {

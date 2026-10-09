@@ -1,13 +1,9 @@
 package app.yap.server.feature.scenario.model
 
-import java.time.LocalDate
-
 internal data class ScenarioState(
     val scenarios: List<ScenarioSnapshot>,
     val slotsUsed: Int,
     val slotCapacity: Int,
-    val streakDays: Int,
-    val practisedDates: List<LocalDate>,
     val practiceSeconds: Long,
 )
 

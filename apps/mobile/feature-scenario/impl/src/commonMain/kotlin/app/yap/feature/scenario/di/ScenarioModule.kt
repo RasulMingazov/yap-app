@@ -5,8 +5,6 @@ import app.yap.feature.scenario.api.HomeNavKey
 import app.yap.feature.scenario.api.ScenariosNavKey
 import app.yap.feature.scenario.api.usecase.GetScenarioOverviewUseCase
 import app.yap.feature.scenario.api.usecase.ObserveScenarioOverviewUseCase
-import app.yap.feature.scenario.data.CurrentDate
-import app.yap.feature.scenario.data.SystemCurrentDate
 import app.yap.feature.scenario.data.local.OverviewSnapshotStore
 import app.yap.feature.scenario.data.local.createOverviewSnapshotStore
 import app.yap.feature.scenario.data.remote.DefaultScenarioRemoteDataSource
@@ -56,13 +54,10 @@ fun featureScenarioModule(): Module = module {
 
     single<ScenarioRemoteDataSource> { DefaultScenarioRemoteDataSource(apiClient = get()) }
 
-    single<CurrentDate> { SystemCurrentDate() }
-
     single { CoroutineScope(SupervisorJob() + Dispatchers.Default) } onClose { scope -> (scope as? CoroutineScope)?.cancel() }
 
     single<ScenarioRepository> {
         DefaultScenarioRepository(
-            currentDate = get(),
             observeAuthSessionStateUseCase = get(),
             remoteDataSource = get(),
             scope = get(),

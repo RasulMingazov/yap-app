@@ -34,7 +34,7 @@ internal class ScenarioActivateRouteTest {
         withScenarioApplication { source ->
             val userId = source.newUser()
 
-            val response = client.post("/v1/scenarios/cafe-visit/activate?today=2026-10-09") {
+            val response = client.post("/v1/scenarios/cafe-visit/activate") {
                 header(HttpHeaders.Authorization, ScenarioTestTokens.bearer(userId))
             }
 

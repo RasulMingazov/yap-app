@@ -2,13 +2,10 @@ package app.yap.feature.scenario.presentation.home.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,8 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -157,7 +151,6 @@ private fun HomeContent(
             LockedPreviewSection(preview = preview, onEvent = onEvent)
         }
 
-        StreakSection(streak = content.streak)
     }
 }
 
@@ -365,92 +358,6 @@ private fun LockedPreviewSection(preview: UiState.LockedPreview, onEvent: (Event
         }
     }
 }
-
-@Composable
-private fun StreakSection(streak: UiState.StreakBlock) {
-    val colors = YapTheme.colors
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier
-            .padding(start = ScreenPadding, end = ScreenPadding, bottom = 24.dp)
-            .fillMaxWidth()
-            .background(colors.chip, RoundedCornerShape(24.dp))
-            .padding(18.dp),
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = streak.number,
-                    color = colors.onBackground,
-                    fontSize = 44.sp,
-                    fontWeight = FontWeight.Black,
-                    lineHeight = 40.sp,
-                )
-                Text(
-                    text = streak.unit.uppercase(),
-                    color = colors.muted,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 0.9.sp,
-                    modifier = Modifier.padding(bottom = 6.dp),
-                )
-            }
-            SectionLabel(text = "Эта неделя")
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-            streak.weekDays.forEach { day -> WeekDayCell(day = day, modifier = Modifier.weight(1f)) }
-        }
-        Text(text = streak.note, color = colors.muted, fontSize = 13.sp, lineHeight = 18.sp)
-    }
-}
-
-@Composable
-private fun WeekDayCell(day: UiState.WeekDayUi, modifier: Modifier = Modifier) {
-    val colors = YapTheme.colors
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = modifier,
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .background(if (day.practised) colors.accentFill else Color.Transparent, CircleShape)
-                .border(
-                    width = 1.5.dp,
-                    color = when {
-                        day.practised -> colors.accentFill
-                        day.isToday -> colors.onBackground
-                        else -> colors.hairlineStrong
-                    },
-                    shape = CircleShape,
-                ),
-        ) {
-            if (day.practised) {
-                Text(
-                    text = "✓",
-                    color = colors.onAccentFill,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Black,
-                )
-            }
-        }
-        Text(
-            text = day.label.uppercase(),
-            color = if (day.isToday) colors.onBackground else colors.faint,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 0.6.sp,
-        )
-    }
-}
-
 @Composable
 private fun SectionLabel(text: String) {
     Text(

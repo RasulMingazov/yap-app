@@ -10,21 +10,16 @@ internal object StubScenarioState {
     const val FREE_TITLE = "Поход в кафе"
     const val LOCKED_ID = "job-interview"
     const val LOCKED_TITLE = "Собеседование"
-    const val TODAY = "2026-10-09"
 
     fun stubStateDto(
         scenarios: List<ScenarioDto> = listOf(stubFreeScenarioDto(), stubLockedScenarioDto()),
         slotsUsed: Int = 0,
         slotCapacity: Int = 5,
-        streakDays: Int = 0,
-        practisedDates: List<String> = emptyList(),
         practiceSeconds: Long = 0L,
     ): ScenarioStateDto = ScenarioStateDto(
         scenarios = scenarios,
         slotsUsed = slotsUsed,
         slotCapacity = slotCapacity,
-        streakDays = streakDays,
-        practisedDates = practisedDates,
         practiceSeconds = practiceSeconds,
     )
 

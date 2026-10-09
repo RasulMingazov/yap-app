@@ -9,16 +9,12 @@ import app.yap.feature.scenario.api.entity.ScenarioId
 import app.yap.feature.scenario.api.entity.ScenarioOverview
 import app.yap.feature.scenario.api.entity.ScenarioStatus
 import app.yap.feature.scenario.api.entity.SlotUsage
-import app.yap.feature.scenario.api.entity.Streak
-import app.yap.feature.scenario.api.entity.WeekDay
-import app.yap.feature.scenario.data.IsoDates
 
 private const val STATUS_ACTIVE = "active"
 private const val STATUS_COMPLETED = "completed"
 private const val SECONDS_PER_MINUTE = 60L
-private const val WEEK_LENGTH = 7
 
-internal fun ScenarioStateDto.toDomain(todayIsoDate: String): ScenarioOverview {
+internal fun ScenarioStateDto.toDomain(): ScenarioOverview {
     val mapped = scenarios.map(ScenarioDto::toDomain)
     val lastOpenedId = scenarios
         .filter { scenario -> scenario.status == STATUS_ACTIVE }
@@ -29,10 +25,6 @@ internal fun ScenarioStateDto.toDomain(todayIsoDate: String): ScenarioOverview {
         scenarios = mapped,
         lastOpened = mapped.firstOrNull { scenario -> scenario.id.value == lastOpenedId },
         slots = SlotUsage(used = slotsUsed, capacity = slotCapacity),
-        streak = Streak(
-            days = streakDays,
-            weekDays = weekDays(todayIsoDate = todayIsoDate, practisedDates = practisedDates.toSet()),
-        ),
         practiceMinutes = (practiceSeconds / SECONDS_PER_MINUTE).toInt(),
     )
 }
@@ -59,16 +51,3 @@ private fun ObjectiveDto.toDomain(): Objective = Objective(
     title = title,
     achieved = achieved,
 )
-
-private fun weekDays(todayIsoDate: String, practisedDates: Set<String>): List<WeekDay> {
-    val todayEpochDay = IsoDates.toEpochDay(todayIsoDate)
-    val monday = todayEpochDay - (IsoDates.isoDayOfWeek(todayEpochDay) - 1)
-    return List(WEEK_LENGTH) { offset ->
-        val isoDate = IsoDates.fromEpochDay(monday + offset)
-        WeekDay(
-            isoDate = isoDate,
-            practised = isoDate in practisedDates,
-            isToday = monday + offset == todayEpochDay,
-        )
-    }
-}

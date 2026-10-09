@@ -30,7 +30,5 @@ internal fun ScenarioState.toDto(): ScenarioStateDto = ScenarioStateDto(
     },
     slotsUsed = slotsUsed,
     slotCapacity = slotCapacity,
-    streakDays = streakDays,
-    practisedDates = practisedDates.map(Any::toString),
     practiceSeconds = practiceSeconds,
 )

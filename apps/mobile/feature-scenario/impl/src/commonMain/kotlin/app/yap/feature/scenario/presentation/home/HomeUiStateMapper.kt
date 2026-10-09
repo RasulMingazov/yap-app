@@ -3,12 +3,10 @@ package app.yap.feature.scenario.presentation.home
 import app.yap.feature.scenario.api.entity.Scenario
 import app.yap.feature.scenario.api.entity.ScenarioOverview
 import app.yap.feature.scenario.api.entity.ScenarioStatus
-import app.yap.feature.scenario.api.entity.Streak
 import app.yap.feature.scenario.presentation.common.pluralRu
 import app.yap.feature.scenario.presentation.home.HomeViewModel.DataState
 import app.yap.feature.scenario.presentation.home.HomeViewModel.UiState
 
-private val WEEK_LABELS = listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
 private const val LOCKED_PREVIEW_COUNT = 4
 
 internal class HomeUiStateMapper {
@@ -44,7 +42,6 @@ internal class HomeUiStateMapper {
             ).takeIf { activeScenarios.isNotEmpty() && hasFreeSlot },
             slotsLabel = "${overview.slots.used} / ${overview.slots.capacity} слотов"
                 .takeIf { activeScenarios.isNotEmpty() },
-            streak = streakBlock(streak = overview.streak, isPromo = hero is HomeHero.Promo),
         )
     }
 
@@ -110,26 +107,6 @@ internal class HomeUiStateMapper {
         )
     }
 
-    private fun streakBlock(streak: Streak, isPromo: Boolean): UiState.StreakBlock {
-        val todayPractised = streak.weekDays.any { day -> day.isToday && day.practised }
-        return UiState.StreakBlock(
-            note = when {
-                isPromo && streak.days > 0 && !todayPractised -> HomeCopy.STREAK_NOTE_AT_RISK
-                todayPractised -> HomeCopy.STREAK_NOTE_SAFE
-                streak.days > 0 -> HomeCopy.STREAK_NOTE_KEEP
-                else -> HomeCopy.STREAK_NOTE_START
-            },
-            number = streak.days.toString(),
-            unit = pluralRu(streak.days, "день", "дня", "дней") + " подряд",
-            weekDays = streak.weekDays.mapIndexed { index, day ->
-                UiState.WeekDayUi(
-                    isToday = day.isToday,
-                    label = WEEK_LABELS.getOrElse(index) { "" },
-                    practised = day.practised,
-                )
-            },
-        )
-    }
 }
 
 private fun Scenario.currentObjectiveOrFirst(): Int =

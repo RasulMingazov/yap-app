@@ -7,7 +7,5 @@ data class ScenarioStateDto(
     val scenarios: List<ScenarioDto>,
     val slotsUsed: Int,
     val slotCapacity: Int,
-    val streakDays: Int,
-    val practisedDates: List<String>,
     val practiceSeconds: Long,
 )

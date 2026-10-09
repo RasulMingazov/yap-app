@@ -6,19 +6,16 @@ internal object StubScenarioOverview {
     const val FREE_TITLE = "Поход в кафе"
     const val LOCKED_ID = "job-interview"
     const val LOCKED_TITLE = "Собеседование"
-    const val TODAY = "2026-10-09"
 
     fun stubOverview(
         scenarios: List<Scenario> = listOf(stubFreeScenario(), stubLockedScenario()),
         lastOpened: Scenario? = null,
         slots: SlotUsage = SlotUsage(used = 0, capacity = 5),
-        streak: Streak = stubStreak(),
         practiceMinutes: Int = 0,
     ): ScenarioOverview = ScenarioOverview(
         scenarios = scenarios,
         lastOpened = lastOpened,
         slots = slots,
-        streak = streak,
         practiceMinutes = practiceMinutes,
     )
 
@@ -73,11 +70,4 @@ internal object StubScenarioOverview {
         objectiveCount = objectives.size,
         objectives = objectives,
     )
-
-    fun stubStreak(
-        days: Int = 0,
-        weekDays: List<WeekDay> = List(7) { index ->
-            WeekDay(isoDate = "2026-10-0${5 + index}".take(10), practised = false, isToday = index == 3)
-        },
-    ): Streak = Streak(days = days, weekDays = weekDays)
 }

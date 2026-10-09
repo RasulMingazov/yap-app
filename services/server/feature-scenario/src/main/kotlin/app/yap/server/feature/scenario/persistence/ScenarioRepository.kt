@@ -51,11 +51,6 @@ internal class ScenarioRepository {
             scenarios = scenarios,
             progress = progress,
             achievedObjectives = achievedObjectives(userId, progress),
-            practiceDays = PracticeDayTable
-                .selectAll()
-                .where { PracticeDayTable.userId eq userId }
-                .map { row -> row[PracticeDayTable.localDate] }
-                .toSet(),
             practiceSeconds = UserStatsTable
                 .selectAll()
                 .where { UserStatsTable.userId eq userId }
@@ -213,14 +208,9 @@ private fun applyAchievement(
         row[this.scenarioId] = scenarioId
         row[attempt] = report.attempt
         row[objectiveOrder] = achieved
-        row[achievedOn] = report.localDate
+        row[achievedAt] = now
     }.insertedCount > 0
     if (!inserted) return
-
-    PracticeDayTable.insertIgnore { row ->
-        row[this.userId] = userId
-        row[localDate] = report.localDate
-    }
 
     UserScenarioTable.update(
         where = { (UserScenarioTable.userId eq userId) and (UserScenarioTable.scenarioId eq scenarioId) },

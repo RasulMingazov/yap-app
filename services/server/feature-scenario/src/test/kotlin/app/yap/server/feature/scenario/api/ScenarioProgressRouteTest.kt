@@ -18,7 +18,6 @@ import kotlin.test.assertEquals
 import kotlinx.serialization.json.Json
 
 private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
-private const val TODAY = "2026-10-09"
 private const val FREE_SCENARIO = "cafe-visit"
 private const val FREE_OBJECTIVES = 6
 
@@ -38,7 +37,6 @@ internal class ScenarioProgressRouteTest {
             assertEquals(expected = HttpStatusCode.OK, actual = replay.status)
             val state = json.decodeFromString<ScenarioStateDto>(replay.bodyAsText())
             assertEquals(expected = 180L, actual = state.practiceSeconds)
-            assertEquals(expected = 1, actual = state.streakDays)
             assertEquals(
                 expected = 2,
                 actual = state.scenarios.single { it.id == FREE_SCENARIO }.currentObjective,
@@ -46,7 +44,7 @@ internal class ScenarioProgressRouteTest {
         }
 
     @Test
-    fun `GIVEN a time-only report WHEN it is applied THEN minutes grow and no streak day is earned`() =
+    fun `GIVEN a time-only report WHEN it is applied THEN minutes grow and progress stands`() =
         withScenarioApplication { source ->
             val userId = source.newUser()
             val bearer = ScenarioTestTokens.bearer(userId)
@@ -57,8 +55,10 @@ internal class ScenarioProgressRouteTest {
             assertEquals(expected = HttpStatusCode.OK, actual = response.status)
             val state = json.decodeFromString<ScenarioStateDto>(response.bodyAsText())
             assertEquals(expected = 180L, actual = state.practiceSeconds)
-            assertEquals(expected = 0, actual = state.streakDays)
-            assertEquals(expected = emptyList(), actual = state.practisedDates)
+            assertEquals(
+                expected = 1,
+                actual = state.scenarios.single { it.id == FREE_SCENARIO }.currentObjective,
+            )
         }
 
     @Test
@@ -124,7 +124,7 @@ internal class ScenarioProgressRouteTest {
         }
 
     private suspend fun HttpClient.activate(bearer: String): HttpResponse =
-        post("/v1/scenarios/$FREE_SCENARIO/activate?today=$TODAY") {
+        post("/v1/scenarios/$FREE_SCENARIO/activate") {
             header(HttpHeaders.Authorization, bearer)
         }
 
@@ -139,13 +139,11 @@ internal class ScenarioProgressRouteTest {
         reportId: String = UUID.randomUUID().toString(),
         attempt: Int = 1,
         achievedObjective: Int?,
-        localDate: String = TODAY,
         elapsedSeconds: Long = 180L,
     ): ReportProgressRequestDto = ReportProgressRequestDto(
         reportId = reportId,
         attempt = attempt,
         achievedObjective = achievedObjective,
-        localDate = localDate,
         elapsedSeconds = elapsedSeconds,
     )
 }

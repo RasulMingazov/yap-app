@@ -20,7 +20,6 @@ import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 
 private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
-private const val TODAY = "2026-10-09"
 private const val FREE_SCENARIO = "cafe-visit"
 private const val FREE_OBJECTIVES = 6
 private val OTHER_SCENARIOS = listOf("small-talk", "taxi-transport", "pharmacy-doctor", "hotel-checkin", "job-interview")
@@ -34,7 +33,7 @@ internal class ScenarioRepeatRouteTest {
             val bearer = ScenarioTestTokens.bearer(userId)
             client.complete(bearer)
 
-            val response = client.post("/v1/scenarios/$FREE_SCENARIO/repeat?today=$TODAY") {
+            val response = client.post("/v1/scenarios/$FREE_SCENARIO/repeat") {
                 header(HttpHeaders.Authorization, bearer)
             }
 
@@ -45,8 +44,6 @@ internal class ScenarioRepeatRouteTest {
             assertEquals(expected = 2, actual = scenario.attempt)
             assertEquals(expected = 1, actual = scenario.currentObjective)
             assertEquals(expected = FREE_OBJECTIVES * 60L, actual = state.practiceSeconds)
-            assertEquals(expected = 1, actual = state.streakDays)
-            assertEquals(expected = listOf(TODAY), actual = state.practisedDates)
         }
 
     @Test
@@ -111,7 +108,7 @@ internal class ScenarioRepeatRouteTest {
     }
 
     private suspend fun HttpClient.complete(bearer: String) {
-        post("/v1/scenarios/$FREE_SCENARIO/activate?today=$TODAY") {
+        post("/v1/scenarios/$FREE_SCENARIO/activate") {
             header(HttpHeaders.Authorization, bearer)
         }
         (1..FREE_OBJECTIVES).forEach { objective ->
@@ -130,7 +127,6 @@ internal class ScenarioRepeatRouteTest {
                         reportId = UUID.randomUUID().toString(),
                         attempt = 1,
                         achievedObjective = objective,
-                        localDate = TODAY,
                         elapsedSeconds = 60L,
                     ),
                 ),

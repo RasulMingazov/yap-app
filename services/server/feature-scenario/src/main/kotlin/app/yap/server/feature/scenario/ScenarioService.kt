@@ -10,10 +10,7 @@ import app.yap.server.feature.scenario.persistence.SLOT_CAPACITY
 import app.yap.server.feature.scenario.persistence.ScenarioRepository
 import app.yap.server.feature.scenario.persistence.StateFacts
 import java.time.Clock
-import java.time.DayOfWeek
 import java.time.Instant
-import java.time.LocalDate
-import java.time.temporal.TemporalAdjusters
 import java.util.UUID
 
 internal class ScenarioService(
@@ -22,27 +19,26 @@ internal class ScenarioService(
     private val scenarioRepository: ScenarioRepository,
 ) {
 
-    fun state(userId: UUID, today: LocalDate): ScenarioState =
-        compose(facts = scenarioRepository.loadFacts(userId), today = today, userId = userId)
+    fun state(userId: UUID): ScenarioState = compose(facts = scenarioRepository.loadFacts(userId), userId = userId)
 
-    fun activate(userId: UUID, scenarioId: String, today: LocalDate?): ScenarioState {
+    fun activate(userId: UUID, scenarioId: String): ScenarioState {
         scenarioRepository.activate(
             hasAccess = accessPolicy.hasAccess(userId),
             now = Instant.now(clock),
             scenarioId = scenarioId,
             userId = userId,
         )
-        return state(userId, today ?: LocalDate.now(clock))
+        return state(userId)
     }
 
-    fun repeat(userId: UUID, scenarioId: String, today: LocalDate?): ScenarioState {
+    fun repeat(userId: UUID, scenarioId: String): ScenarioState {
         scenarioRepository.repeat(
             hasAccess = accessPolicy.hasAccess(userId),
             now = Instant.now(clock),
             scenarioId = scenarioId,
             userId = userId,
         )
-        return state(userId, today ?: LocalDate.now(clock))
+        return state(userId)
     }
 
     fun report(userId: UUID, scenarioId: String, report: ProgressReport): ScenarioState {
@@ -52,13 +48,11 @@ internal class ScenarioService(
             scenarioId = scenarioId,
             userId = userId,
         )
-        return state(userId, report.localDate)
+        return state(userId)
     }
 
-    private fun compose(facts: StateFacts, today: LocalDate, userId: UUID): ScenarioState {
+    private fun compose(facts: StateFacts, userId: UUID): ScenarioState {
         val hasAccess = accessPolicy.hasAccess(userId)
-        val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val weekEnd = weekStart.plusDays(6)
 
         val scenarios = facts.scenarios.map { scenario ->
             val progress = facts.progress[scenario.id]
@@ -89,8 +83,6 @@ internal class ScenarioService(
             scenarios = scenarios,
             slotsUsed = facts.progress.values.count { fact -> fact.status == ProgressStatus.Active },
             slotCapacity = SLOT_CAPACITY,
-            streakDays = StreakCalculation.streakDays(practisedDates = facts.practiceDays, today = today),
-            practisedDates = facts.practiceDays.filter { day -> day in weekStart..weekEnd }.sorted(),
             practiceSeconds = facts.practiceSeconds,
         )
     }

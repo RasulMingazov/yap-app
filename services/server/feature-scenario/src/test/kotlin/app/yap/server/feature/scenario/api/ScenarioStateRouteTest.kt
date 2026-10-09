@@ -21,7 +21,7 @@ internal class ScenarioStateRouteTest {
         withScenarioApplication { source ->
             val userId = source.newUser()
 
-            val response = client.get("/v1/scenarios/state?today=2026-10-09") {
+            val response = client.get("/v1/scenarios/state") {
                 header(HttpHeaders.Authorization, ScenarioTestTokens.bearer(userId))
             }
 
@@ -32,20 +32,7 @@ internal class ScenarioStateRouteTest {
             assertEquals(expected = 19, actual = state.scenarios.count { it.locked })
             assertEquals(expected = 0, actual = state.slotsUsed)
             assertEquals(expected = 5, actual = state.slotCapacity)
-            assertEquals(expected = 0, actual = state.streakDays)
             assertEquals(expected = 0L, actual = state.practiceSeconds)
-        }
-
-    @Test
-    fun `GIVEN a malformed today parameter WHEN state is requested THEN the request is rejected as invalid`() =
-        withScenarioApplication { source ->
-            val userId = source.newUser()
-
-            val response = client.get("/v1/scenarios/state?today=not-a-date") {
-                header(HttpHeaders.Authorization, ScenarioTestTokens.bearer(userId))
-            }
-
-            assertEquals(expected = HttpStatusCode.BadRequest, actual = response.status)
         }
 
     @Test
@@ -53,12 +40,12 @@ internal class ScenarioStateRouteTest {
         var hasAccess = true
         withScenarioApplication(accessPolicy = AccessPolicy { hasAccess }) { source ->
             val userId = source.newUser()
-            client.post("/v1/scenarios/job-interview/activate?today=2026-10-09") {
+            client.post("/v1/scenarios/job-interview/activate") {
                 header(HttpHeaders.Authorization, ScenarioTestTokens.bearer(userId))
             }
 
             hasAccess = false
-            val response = client.get("/v1/scenarios/state?today=2026-10-09") {
+            val response = client.get("/v1/scenarios/state") {
                 header(HttpHeaders.Authorization, ScenarioTestTokens.bearer(userId))
             }
 
@@ -73,7 +60,7 @@ internal class ScenarioStateRouteTest {
     @Test
     fun `GIVEN no bearer token WHEN state is requested THEN the request is unauthorized`() =
         withScenarioApplication {
-            val response = client.get("/v1/scenarios/state?today=2026-10-09")
+            val response = client.get("/v1/scenarios/state")
 
             assertEquals(expected = HttpStatusCode.Unauthorized, actual = response.status)
         }

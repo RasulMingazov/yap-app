@@ -28,14 +28,8 @@ create table user_objective (
     scenario_id text not null,
     attempt int not null,
     objective_order int not null,
-    achieved_on date not null,
+    achieved_at timestamptz not null,
     primary key (user_id, scenario_id, attempt, objective_order)
-);
-
-create table practice_day (
-    user_id uuid not null references users (id) on delete cascade,
-    local_date date not null,
-    primary key (user_id, local_date)
 );
 
 create table user_stats (

@@ -1,7 +1,6 @@
 package app.yap.server.feature.scenario.persistence
 
 import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.javatime.timestamp
 
 internal object ScenarioTable : Table("scenario") {
@@ -42,17 +41,9 @@ internal object UserObjectiveTable : Table("user_objective") {
     val scenarioId = text("scenario_id")
     val attempt = integer("attempt")
     val objectiveOrder = integer("objective_order")
-    val achievedOn = date("achieved_on")
+    val achievedAt = timestamp("achieved_at")
 
     override val primaryKey = PrimaryKey(userId, scenarioId, attempt, objectiveOrder)
-}
-
-internal object PracticeDayTable : Table("practice_day") {
-
-    val userId = uuid("user_id")
-    val localDate = date("local_date")
-
-    override val primaryKey = PrimaryKey(userId, localDate)
 }
 
 internal object UserStatsTable : Table("user_stats") {

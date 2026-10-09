@@ -2,13 +2,11 @@ package app.yap.server.feature.scenario.persistence
 
 import app.yap.server.feature.scenario.model.ProgressStatus
 import java.time.Instant
-import java.time.LocalDate
 
 internal data class StateFacts(
     val scenarios: List<ScenarioFact>,
     val progress: Map<String, ProgressFact>,
     val achievedObjectives: Map<String, Set<Int>>,
-    val practiceDays: Set<LocalDate>,
     val practiceSeconds: Long,
 )
 

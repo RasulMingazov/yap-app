@@ -14,8 +14,6 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import java.time.LocalDate
-import java.time.format.DateTimeParseException
 import java.util.UUID
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -25,27 +23,18 @@ internal fun Route.scenarioRoutes(scenarioService: ScenarioService, tokenService
     route("/v1/scenarios") {
         get("/state") {
             val userId = call.authenticatedUserId(tokenService)
-            val today = call.todayParameter() ?: throw ScenarioFailure.MalformedInput()
-            call.respond(scenarioService.state(userId = userId, today = today).toDto())
+            call.respond(scenarioService.state(userId = userId).toDto())
         }
 
         post("/{id}/activate") {
             val userId = call.authenticatedUserId(tokenService)
-            val state = scenarioService.activate(
-                scenarioId = call.scenarioId(),
-                today = call.todayParameter(),
-                userId = userId,
-            )
+            val state = scenarioService.activate(scenarioId = call.scenarioId(), userId = userId)
             call.respond(state.toDto())
         }
 
         post("/{id}/repeat") {
             val userId = call.authenticatedUserId(tokenService)
-            val state = scenarioService.repeat(
-                scenarioId = call.scenarioId(),
-                today = call.todayParameter(),
-                userId = userId,
-            )
+            val state = scenarioService.repeat(scenarioId = call.scenarioId(), userId = userId)
             call.respond(state.toDto())
         }
 
@@ -81,26 +70,14 @@ private fun ApplicationCall.authenticatedUserId(tokenService: TokenService): UUI
 private fun ApplicationCall.scenarioId(): String =
     parameters["id"] ?: throw ScenarioFailure.MalformedInput()
 
-private fun ApplicationCall.todayParameter(): LocalDate? =
-    request.queryParameters["today"]?.let { value ->
-        try {
-            LocalDate.parse(value)
-        } catch (_: DateTimeParseException) {
-            throw ScenarioFailure.MalformedInput()
-        }
-    }
-
 private fun ReportProgressRequestDto.toModel(): ProgressReport = try {
     ProgressReport(
         reportId = UUID.fromString(reportId),
         attempt = attempt,
         achievedObjective = achievedObjective,
-        localDate = LocalDate.parse(localDate),
         elapsedSeconds = elapsedSeconds,
     )
 } catch (_: IllegalArgumentException) {
-    throw ScenarioFailure.MalformedInput()
-} catch (_: DateTimeParseException) {
     throw ScenarioFailure.MalformedInput()
 }
 

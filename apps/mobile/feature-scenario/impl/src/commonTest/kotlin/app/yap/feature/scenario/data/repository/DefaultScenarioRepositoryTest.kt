@@ -7,7 +7,6 @@ import app.yap.feature.scenario.STUB_ACCOUNT_ID
 import app.yap.feature.scenario.StubObserveAuthSessionStateUseCase
 import app.yap.feature.scenario.api.entity.ScenarioId
 import app.yap.feature.scenario.api.entity.ScenarioStatus
-import app.yap.feature.scenario.data.CurrentDate
 import app.yap.feature.scenario.data.StubScenarioState
 import app.yap.feature.scenario.data.local.OverviewSnapshotLocal
 import app.yap.feature.scenario.data.local.StubOverviewSnapshotStore
@@ -164,7 +163,6 @@ internal class DefaultScenarioRepositoryTest {
         val snapshotStore = StubOverviewSnapshotStore(snapshot = snapshot)
         private val scope = CoroutineScope(StandardTestDispatcher(testScope.testScheduler))
         val repository = DefaultScenarioRepository(
-            currentDate = CurrentDate { StubScenarioState.TODAY },
             observeAuthSessionStateUseCase = observeAuthSessionStateUseCase,
             remoteDataSource = remoteDataSource,
             scope = scope,

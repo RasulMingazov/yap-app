@@ -199,69 +199,6 @@ internal class HomeViewModelTest {
         }
 
     @Test
-    fun `GIVEN an objective achieved today WHEN the streak renders THEN the note confirms the series is safe`() =
-        runViewModelTest {
-            val env = Environment(
-                overview = StubScenarioOverview.stubOverview(
-                        streak = StubScenarioOverview.stubStreak(
-                            days = 2,
-                            weekDays = weekWithTodayPractised(practisedToday = true),
-                        ),
-                    ),
-            )
-            runCurrent()
-
-            val content = env.viewModel.uiState.value.content
-
-            assertIs<HomeViewModel.UiState.Content.Ready>(content)
-            assertEquals(expected = HomeCopy.STREAK_NOTE_SAFE, actual = content.streak.note)
-            assertEquals(expected = "2", actual = content.streak.number)
-        }
-
-    @Test
-    fun `GIVEN a run without today's objective WHEN the streak renders THEN the note asks for one step today`() =
-        runViewModelTest {
-            val env = Environment(
-                overview = StubScenarioOverview.stubOverview(
-                        streak = StubScenarioOverview.stubStreak(
-                            days = 2,
-                            weekDays = weekWithTodayPractised(practisedToday = false),
-                        ),
-                    ),
-            )
-            runCurrent()
-
-            val content = env.viewModel.uiState.value.content
-
-            assertIs<HomeViewModel.UiState.Content.Ready>(content)
-            assertEquals(expected = HomeCopy.STREAK_NOTE_KEEP, actual = content.streak.note)
-        }
-
-    @Test
-    fun `GIVEN the promo hero and a run at risk WHEN the streak renders THEN the note warns about tomorrow`() =
-        runViewModelTest {
-            val env = Environment(
-                overview = StubScenarioOverview.stubOverview(
-                        scenarios = listOf(
-                            StubScenarioOverview.stubFreeScenario(status = ScenarioStatus.Completed),
-                            StubScenarioOverview.stubLockedScenario(),
-                        ),
-                        streak = StubScenarioOverview.stubStreak(
-                            days = 3,
-                            weekDays = weekWithTodayPractised(practisedToday = false),
-                        ),
-                    ),
-            )
-            runCurrent()
-
-            val content = env.viewModel.uiState.value.content
-
-            assertIs<HomeViewModel.UiState.Content.Ready>(content)
-            assertEquals(expected = HomeCopy.PROMO_TITLE, actual = content.hero.title)
-            assertEquals(expected = HomeCopy.STREAK_NOTE_AT_RISK, actual = content.streak.note)
-        }
-
-    @Test
     fun `GIVEN the free scenario is done without access WHEN home renders THEN the promo hero previews locked ones`() =
         runViewModelTest {
             val env = Environment(
@@ -286,14 +223,6 @@ internal class HomeViewModelTest {
             )
             assertEquals(expected = HomeCopy.LOCKED_PREVIEW_ALL, actual = content.lockedPreview?.moreLabel)
         }
-
-    private fun weekWithTodayPractised(practisedToday: Boolean) = List(7) { index ->
-        app.yap.feature.scenario.api.entity.WeekDay(
-            isoDate = "2026-10-0${5 + index}".take(10),
-            practised = (index < 3) || (index == 3 && practisedToday),
-            isToday = index == 3,
-        )
-    }
 
     private class Environment(
         overview: app.yap.feature.scenario.api.entity.ScenarioOverview?,
