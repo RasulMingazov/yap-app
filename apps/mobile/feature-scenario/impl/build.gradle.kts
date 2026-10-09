@@ -7,6 +7,10 @@ plugins {
 }
 
 kotlin {
+    android {
+        withHostTest {}
+    }
+
     sourceSets {
         commonMain.dependencies {
             api(project(":apps:mobile:feature-scenario:api"))
