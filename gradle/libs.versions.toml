@@ -19,6 +19,7 @@ java = "17"
 junit = "4.13.2"
 junitJupiter = "5.14.4"
 koin = "4.2.2"
+ksp = "2.3.9"
 kotlin = "2.4.0"
 kotlinCoroutines = "1.11.0"
 kotlinSerialization = "1.11.0"
@@ -27,8 +28,10 @@ lifecycle = "2.11.0"
 minSdk = "24"
 navigation3Runtime = "1.2.0-alpha04"
 navigation3Ui = "1.2.0-alpha02"
+room = "2.8.5"
 postgresql = "42.7.7"
 robolectric = "4.16.1"
+sqlite = "2.7.1"
 slf4j = "2.0.16"
 logback = "1.5.18"
 stubcall = "0.1.0"
@@ -42,6 +45,9 @@ androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscree
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "androidxCredentials" }
 androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "androidxCredentials" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-sqlite-bundled = { group = "androidx.sqlite", name = "sqlite-bundled", version.ref = "sqlite" }
 appauth = { group = "net.openid", name = "appauth", version.ref = "appauth" }
 auth0-java-jwt = { group = "com.auth0", name = "java-jwt", version.ref = "auth0Jwt" }
 auth0-jwks-rsa = { group = "com.auth0", name = "jwks-rsa", version.ref = "auth0JwksRsa" }
@@ -113,6 +119,7 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 yap-android-application = { id = "app.yap.android.application" }
 yap-compose-multiplatform = { id = "app.yap.compose.multiplatform" }
 yap-detekt = { id = "app.yap.detekt" }

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.yap.android.application) apply false
     alias(libs.plugins.yap.compose.multiplatform) apply false
     alias(libs.plugins.yap.detekt) apply false
+    alias(libs.plugins.ksp) apply false
     alias(libs.plugins.yap.jvm.library) apply false
     alias(libs.plugins.yap.kmp.library) apply false
     alias(libs.plugins.yap.ktor.server) apply false

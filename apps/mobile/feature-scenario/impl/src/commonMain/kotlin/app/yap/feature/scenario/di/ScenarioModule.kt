@@ -5,8 +5,9 @@ import app.yap.feature.scenario.api.HomeNavKey
 import app.yap.feature.scenario.api.ScenariosNavKey
 import app.yap.feature.scenario.api.usecase.GetScenarioOverviewUseCase
 import app.yap.feature.scenario.api.usecase.ObserveScenarioOverviewUseCase
-import app.yap.feature.scenario.data.local.OverviewSnapshotStore
-import app.yap.feature.scenario.data.local.createOverviewSnapshotStore
+import app.yap.feature.scenario.data.local.ScenarioDao
+import app.yap.feature.scenario.data.local.ScenarioDatabase
+import app.yap.feature.scenario.data.local.createScenarioDatabase
 import app.yap.feature.scenario.data.remote.DefaultScenarioRemoteDataSource
 import app.yap.feature.scenario.data.remote.ScenarioRemoteDataSource
 import app.yap.feature.scenario.data.repository.DefaultScenarioRepository
@@ -50,7 +51,9 @@ import org.koin.dsl.navigation3.navigation
 
 @OptIn(ExperimentalMaterial3Api::class)
 fun featureScenarioModule(): Module = module {
-    single<OverviewSnapshotStore> { createOverviewSnapshotStore() }
+    single<ScenarioDatabase> { createScenarioDatabase() }
+
+    single<ScenarioDao> { get<ScenarioDatabase>().scenarioDao() }
 
     single<ScenarioRemoteDataSource> { DefaultScenarioRemoteDataSource(apiClient = get()) }
 
@@ -60,8 +63,8 @@ fun featureScenarioModule(): Module = module {
         DefaultScenarioRepository(
             observeAuthSessionStateUseCase = get(),
             remoteDataSource = get(),
+            scenarioDao = get(),
             scope = get(),
-            snapshotStore = get(),
         )
     }
 

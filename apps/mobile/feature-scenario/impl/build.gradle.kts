@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.yap.koin.compose)
     alias(libs.plugins.yap.navigation3)
     alias(libs.plugins.yap.serialization)
+    alias(libs.plugins.ksp)
 }
 
 kotlin {
@@ -20,10 +21,9 @@ kotlin {
             implementation(project(":apps:mobile:core-network"))
             implementation(project(":shared:contract:common"))
             implementation(project(":shared:contract:scenario"))
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
             implementation(libs.ktor.client.core)
-        }
-        androidMain.dependencies {
-            implementation(libs.androidx.datastore.preferences)
         }
         commonTest.dependencies {
             implementation(project(":apps:mobile:core-test"))
@@ -32,4 +32,10 @@ kotlin {
             implementation(libs.stubcall)
         }
     }
+}
+
+dependencies {
+    add("kspAndroid", libs.androidx.room.compiler)
+    add("kspIosArm64", libs.androidx.room.compiler)
+    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
 }
