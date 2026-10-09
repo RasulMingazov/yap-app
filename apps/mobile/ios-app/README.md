@@ -34,7 +34,8 @@ and maps that narrow result into the same repository path Android uses.
 ## Configuration
 
 `YapApp.swift` owns the base URL, the iOS and web client IDs, and the two legal destinations,
-mirroring `MainActivity` on Android. A simulator reaches a server running on this machine at
+mirroring `MainActivity` on Android. The base URL defaults to the deployed backend; a simulator
+can instead reach a server running on this machine at
 `http://localhost:8080`. Both legal destinations stay `nil` until the documents exist — the line
 renders either way, and the app is not released to users while either is unset.
 

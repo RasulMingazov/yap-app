@@ -10,7 +10,7 @@ import YapShared
 /// `nil` until the documents exist — the line renders either way, and the app is not released to
 /// users while either is unset.
 private enum AppConfiguration {
-    static let baseUrl = "http://localhost:8080"
+    static let baseUrl = "https://rasulmingazov-yap-app-03de.twc1.net"
     static let googleClientId = "REPLACE_WITH_IOS_CLIENT_ID.apps.googleusercontent.com"
     static let googleServerClientId = "REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com"
     static let termsUrl: String? = nil

@@ -15,7 +15,7 @@ import app.yap.shared.app.initAndroidKoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-private const val BASE_URL = "http://10.0.2.2:8080"
+private const val BASE_URL = "https://rasulmingazov-yap-app-03de.twc1.net"
 private const val GOOGLE_SERVER_CLIENT_ID = "REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com"
 private const val GOOGLE_ANDROID_CLIENT_ID = "REPLACE_WITH_ANDROID_CLIENT_ID.apps.googleusercontent.com"
 private const val GOOGLE_REDIRECT_URI = "app.yap.oauth:/oauth2redirect"
