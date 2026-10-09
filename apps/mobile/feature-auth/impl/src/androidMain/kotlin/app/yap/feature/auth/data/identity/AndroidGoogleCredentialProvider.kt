@@ -26,17 +26,30 @@ internal class AndroidGoogleCredentialProvider(
                     )
                     .build(),
             )
-        } catch (_: GetCredentialCancellationException) {
-            throw LoginCancelledException()
         } catch (error: GetCredentialException) {
-            val hasNoProvider = error is GetCredentialProviderConfigurationException ||
-                error is NoCredentialException
-            if (!hasNoProvider) throw error
-            null
+            error.browserFallbackOrThrow()
         }
 
         return response?.toIdToken() ?: googleBrowserAuthFlow.requestAuthorizationCode()
     }
+
+    /**
+     * `null` when the browser flow should take over, because no provider can answer on this device.
+     *
+     * Play services report every aborted Sign in with Google flow as a cancellation, including the
+     * ones the user never got to finish — an app whose signing certificate is not registered in the
+     * Google Cloud console comes back as "[16] Account reauth failed." under that very type. Only a
+     * message that names the user as the one who cancelled stays silent; anything else propagates
+     * as a failure so the screen can say so.
+     */
+    private fun GetCredentialException.browserFallbackOrThrow(): GetCredentialResponse? = when {
+        this is GetCredentialCancellationException && isUserDismissal -> throw LoginCancelledException()
+        this is GetCredentialProviderConfigurationException || this is NoCredentialException -> null
+        else -> throw this
+    }
+
+    private val GetCredentialCancellationException.isUserDismissal: Boolean
+        get() = message.isNullOrBlank() || USER_DISMISSAL.containsMatchIn(message.orEmpty())
 
     private fun GetCredentialResponse.toIdToken(): GoogleCredential.IdToken {
         val isGoogleIdToken =
@@ -46,5 +59,9 @@ internal class AndroidGoogleCredentialProvider(
         return GoogleCredential.IdToken(
             value = GoogleIdTokenCredential.createFrom(credential.data).idToken,
         )
+    }
+
+    private companion object {
+        val USER_DISMISSAL = Regex("cancel{1,2}ed by (the )?user", RegexOption.IGNORE_CASE)
     }
 }
