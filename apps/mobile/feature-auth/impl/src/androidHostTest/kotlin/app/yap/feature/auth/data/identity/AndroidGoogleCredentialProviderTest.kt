@@ -65,6 +65,23 @@ internal class AndroidGoogleCredentialProviderTest {
     }
 
     @Test
+    fun `GIVEN Play services abort the flow WHEN a credential is requested THEN it is a failure, not a cancellation`() =
+        runTest {
+            val env = Environment(outcome = CredentialManagerOutcome.AbortedByProvider)
+
+            assertFailsWith<GetCredentialCancellationException> { env.provider.requestCredential(nonce = NONCE) }
+        }
+
+    @Test
+    fun `GIVEN Play services abort the flow WHEN a credential is requested THEN the browser never opens`() = runTest {
+        val env = Environment(outcome = CredentialManagerOutcome.AbortedByProvider)
+
+        runCatching { env.provider.requestCredential(nonce = NONCE) }
+
+        assertEquals(expected = 0, actual = env.browserAuthFlow.callCount)
+    }
+
+    @Test
     fun `GIVEN a credential provider answers WHEN a credential is requested THEN the nonce is submitted`() = runTest {
         val env = Environment(outcome = CredentialManagerOutcome.Success)
 
@@ -78,6 +95,7 @@ internal class AndroidGoogleCredentialProviderTest {
         NoProviderConfigured,
         NoCredential,
         Cancelled,
+        AbortedByProvider,
     }
 
     private class StubCredentialRequester(
@@ -102,7 +120,11 @@ internal class AndroidGoogleCredentialProviderTest {
 
                 CredentialManagerOutcome.NoCredential -> throw NoCredentialException()
 
-                CredentialManagerOutcome.Cancelled -> throw GetCredentialCancellationException()
+                CredentialManagerOutcome.Cancelled ->
+                    throw GetCredentialCancellationException(USER_DISMISSAL_MESSAGE)
+
+                CredentialManagerOutcome.AbortedByProvider ->
+                    throw GetCredentialCancellationException(PROVIDER_ABORT_MESSAGE)
             }
         }
 
@@ -146,6 +168,8 @@ internal class AndroidGoogleCredentialProviderTest {
         const val ID_TOKEN =
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTEifQ.signature"
         const val NONCE = "nonce-1"
+        const val PROVIDER_ABORT_MESSAGE = "[16] Account reauth failed."
         const val SERVER_CLIENT_ID = "web-client.apps.googleusercontent.com"
+        const val USER_DISMISSAL_MESSAGE = "[16] Cancelled by user."
     }
 }
