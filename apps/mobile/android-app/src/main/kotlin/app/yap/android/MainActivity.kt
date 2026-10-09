@@ -15,13 +15,6 @@ import app.yap.shared.app.initAndroidKoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-private const val BASE_URL = "http://10.0.2.2:8080"
-private const val GOOGLE_SERVER_CLIENT_ID = "REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com"
-private const val GOOGLE_ANDROID_CLIENT_ID = "REPLACE_WITH_ANDROID_CLIENT_ID.apps.googleusercontent.com"
-private const val GOOGLE_REDIRECT_URI = "app.yap.oauth:/oauth2redirect"
-private val TERMS_URL: String? = null
-private val PRIVACY_URL: String? = null
-
 class MainActivity : ComponentActivity() {
 
     private lateinit var activityProvider: ActivityProvider
@@ -32,13 +25,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val koin = initAndroidKoin(
-            baseUrl = BASE_URL,
+            baseUrl = AppConfiguration.apiBaseUrl,
             context = applicationContext,
-            googleAndroidClientId = GOOGLE_ANDROID_CLIENT_ID,
-            googleRedirectUri = GOOGLE_REDIRECT_URI,
-            googleServerClientId = GOOGLE_SERVER_CLIENT_ID,
-            privacyUrl = PRIVACY_URL,
-            termsUrl = TERMS_URL,
+            googleAndroidClientId = AppConfiguration.googleAndroidClientId,
+            googleRedirectUri = AppConfiguration.googleRedirectUri,
+            googleServerClientId = AppConfiguration.googleWebClientId,
+            privacyUrl = AppConfiguration.privacyUrl,
+            termsUrl = AppConfiguration.termsUrl,
         )
         activityProvider = koin.get()
 

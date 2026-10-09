@@ -1,0 +1,15 @@
+// Copy to `Config.xcconfig` (ignored by Git) and fill it in. The project reads that file as the base
+// configuration of the Yap target, and `Info.plist` forwards the values to `YapApp.swift`.
+//
+// `//` starts a comment in this format, so a URL needs the `$()` break: `https:/$()/host`.
+
+// Backend base URL, no trailing slash. A simulator reaches a server on this machine at
+// `http:/$()/localhost:8080`.
+YAP_API_BASE_URL =
+
+// OAuth client IDs from the Google Cloud console. The web client ID is the `serverClientId` both
+// platforms send. The reversed iOS client ID is `com.googleusercontent.apps.<id>` — the iOS client
+// ID without its `.apps.googleusercontent.com` suffix — and is the URL scheme GoogleSignIn returns to.
+YAP_GOOGLE_WEB_CLIENT_ID =
+YAP_GOOGLE_IOS_CLIENT_ID =
+YAP_GOOGLE_IOS_REVERSED_CLIENT_ID =

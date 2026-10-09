@@ -46,7 +46,9 @@ may depend on the shared auth contract.
 ## Running it
 
 Server configuration is read from `.env` at the repository root; copy
-[`.env.example`](.env.example) and fill it in. Then:
+[`.env.example`](.env.example) and fill it in. The Android app reads its backend URL and Google
+client IDs from `local.properties`; copy [`local.properties.example`](local.properties.example)
+the same way. Then:
 
 ```shell
 ./gradlew :services:server:app:run          # server, on http://localhost:8080
