@@ -8,4 +8,7 @@ internal sealed interface RootNavKey : NavKey {
 
     @Serializable
     data object Main : RootNavKey
+
+    @Serializable
+    data object Profile : RootNavKey
 }

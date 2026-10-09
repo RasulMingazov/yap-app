@@ -2,6 +2,7 @@ package app.yap.server.core.security
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwt.exceptions.JWTVerificationException
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -62,6 +63,24 @@ class JwtTokenService(
             ?.takeIf { it.size == 2 && it.none(String::isBlank) }
             ?.first()
             ?.takeIf { runCatching { UUID.fromString(it) }.isSuccess }
+
+    override fun verifyAccessToken(value: String): SessionIdentity {
+        val decoded = try {
+            JWT.require(algorithm)
+                .withIssuer(jwtIssuer)
+                .withAudience(jwtAudience)
+                .withClaim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE)
+                .build()
+                .verify(value)
+        } catch (_: JWTVerificationException) {
+            null
+        }
+
+        val userId = decoded?.subject?.takeIf(String::isNotBlank)
+        val sessionId = decoded?.getClaim(SESSION_ID_CLAIM)?.asString()
+        if (userId == null || sessionId == null) throw InvalidTokenException()
+        return SessionIdentity(userId = userId, sessionId = sessionId)
+    }
 
     override fun hash(value: String): String = MessageDigest.getInstance("SHA-256")
         .digest(value.toByteArray(StandardCharsets.UTF_8))

@@ -67,6 +67,19 @@ internal class ApiClientTest {
     }
 
     @Test
+    fun `GIVEN a forbidden refusal carrying an error code WHEN it arrives THEN the code reaches the caller`() =
+        runTest {
+            val env = Environment(outcome = ServerOutcome.ForbiddenWithCode)
+
+            val result = env.apiClient.get<PayloadDto>(PATH)
+
+            assertEquals(
+                expected = ApiResult.Failure(ApiError.Rejected(code = FORBIDDEN_CODE)),
+                actual = result,
+            )
+        }
+
+    @Test
     fun `GIVEN the server fails on its own side WHEN a request is sent THEN it is reported as unavailable`() =
         runTest {
             val env = Environment(outcome = ServerOutcome.ServerError)
@@ -131,6 +144,7 @@ internal class ApiClientTest {
         NoContent,
         BadRequest,
         BadRequestWithoutBody,
+        ForbiddenWithCode,
         Unauthorized,
         ServerError,
         NoNetwork,
@@ -156,6 +170,11 @@ internal class ApiClientTest {
                 )
 
                 ServerOutcome.BadRequestWithoutBody -> respondError(HttpStatusCode.BadRequest)
+                ServerOutcome.ForbiddenWithCode -> respond(
+                    content = FORBIDDEN_JSON,
+                    status = HttpStatusCode.Forbidden,
+                    headers = jsonHeaders(),
+                )
                 ServerOutcome.Unauthorized -> respondError(HttpStatusCode.Unauthorized)
                 ServerOutcome.ServerError -> respondError(HttpStatusCode.InternalServerError)
                 ServerOutcome.NoNetwork -> error("no network")
@@ -184,5 +203,7 @@ internal class ApiClientTest {
         const val ACCESS_TOKEN = "access-token"
         val PAYLOAD_JSON = """{"value":"$VALUE"}"""
         val ERROR_JSON = """{"error":"${ApiErrorCode.INVALID_REQUEST}"}"""
+        const val FORBIDDEN_CODE = ApiErrorCode.ACCESS_REQUIRED
+        val FORBIDDEN_JSON = """{"error":"$FORBIDDEN_CODE"}"""
     }
 }

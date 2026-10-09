@@ -7,6 +7,7 @@ dependencies {
     implementation(project(":services:server:core-database"))
     implementation(project(":services:server:core-security"))
     implementation(project(":services:server:feature-auth"))
+    implementation(project(":services:server:feature-scenario"))
     implementation(project(":shared:contract:common"))
     implementation(libs.ktor.server.call.logging)
     implementation(libs.ktor.server.forwarded.header)

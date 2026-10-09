@@ -15,10 +15,12 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(project(":apps:mobile:feature-auth:api"))
+            api(project(":apps:mobile:feature-scenario:api"))
             implementation(project(":apps:mobile:core-common"))
             implementation(project(":apps:mobile:core-design"))
             implementation(project(":apps:mobile:core-network"))
             implementation(project(":apps:mobile:feature-auth:impl"))
+            implementation(project(":apps:mobile:feature-scenario:impl"))
             implementation(libs.lifecycle.runtime.compose)
         }
         commonTest.dependencies {

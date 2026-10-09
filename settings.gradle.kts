@@ -29,12 +29,15 @@ rootProject.name = "yap-app"
 
 include(":shared:contract:auth")
 include(":shared:contract:common")
+include(":shared:contract:scenario")
 
 include(":apps:mobile:android-app")
 include(":apps:mobile:shared-app")
 include(":apps:mobile:app-root")
 include(":apps:mobile:feature-auth:api")
 include(":apps:mobile:feature-auth:impl")
+include(":apps:mobile:feature-scenario:api")
+include(":apps:mobile:feature-scenario:impl")
 include(":apps:mobile:core-common")
 include(":apps:mobile:core-design")
 include(":apps:mobile:core-network")
@@ -42,6 +45,7 @@ include(":apps:mobile:core-test")
 
 include(":services:server:app")
 include(":services:server:feature-auth")
+include(":services:server:feature-scenario")
 include(":services:server:core-config")
 include(":services:server:core-database")
 include(":services:server:core-security")

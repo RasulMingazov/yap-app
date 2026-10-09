@@ -3,6 +3,7 @@ package app.yap.server.app
 import app.yap.contract.common.ApiErrorCode
 import app.yap.contract.common.ErrorResponseDto
 import app.yap.server.feature.auth.model.AuthFailure
+import app.yap.server.feature.scenario.model.ScenarioFailure
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -17,6 +18,17 @@ internal fun Application.installErrorMapping() {
                 is AuthFailure.UnverifiableConfirmation -> HttpStatusCode.Unauthorized to ApiErrorCode.UNAUTHORIZED
                 is AuthFailure.ProviderUnavailable ->
                     HttpStatusCode.ServiceUnavailable to ApiErrorCode.PROVIDER_UNAVAILABLE
+            }
+            call.respond(status, ErrorResponseDto(error = code))
+        }
+        exception<ScenarioFailure> { call, failure ->
+            val (status, code) = when (failure) {
+                is ScenarioFailure.MalformedInput -> HttpStatusCode.BadRequest to ApiErrorCode.INVALID_REQUEST
+                is ScenarioFailure.Unauthorized -> HttpStatusCode.Unauthorized to ApiErrorCode.UNAUTHORIZED
+                is ScenarioFailure.NotFound -> HttpStatusCode.NotFound to ApiErrorCode.NOT_FOUND
+                is ScenarioFailure.AccessRequired -> HttpStatusCode.Forbidden to ApiErrorCode.ACCESS_REQUIRED
+                is ScenarioFailure.SlotLimitReached -> HttpStatusCode.Conflict to ApiErrorCode.SLOT_LIMIT_REACHED
+                is ScenarioFailure.NotRepeatable -> HttpStatusCode.Conflict to ApiErrorCode.INVALID_REQUEST
             }
             call.respond(status, ErrorResponseDto(error = code))
         }

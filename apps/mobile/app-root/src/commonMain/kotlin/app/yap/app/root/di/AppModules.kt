@@ -2,6 +2,7 @@ package app.yap.app.root.di
 
 import app.yap.core.network.coreNetworkModule
 import app.yap.feature.auth.di.featureAuthModule
+import app.yap.feature.scenario.di.featureScenarioModule
 import org.koin.core.KoinApplication
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
@@ -25,6 +26,7 @@ internal fun appModules(
         googleRedirectUri = googleRedirectUri,
         iosGoogleIdTokenRequester = iosGoogleIdTokenRequester,
     ),
+    featureScenarioModule(),
     coreNetworkModule(baseUrl),
 )
 

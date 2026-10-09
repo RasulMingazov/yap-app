@@ -4,6 +4,7 @@ import androidx.navigation3.runtime.NavKey
 import app.yap.feature.auth.api.AuthNavKey
 import app.yap.feature.auth.api.entity.AuthSessionState
 import app.yap.feature.auth.api.entity.UserId
+import app.yap.feature.scenario.api.ScenariosNavKey
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.first
@@ -146,6 +147,76 @@ internal class RootBackStackTest {
         assertEquals(expected = listOf(RootNavKey.Main), actual = observed.last())
         collection.cancel()
     }
+
+    @Test
+    fun `GIVEN the user is logged in WHEN the shell appears THEN the home tab is selected`() = runTest {
+        val env = Environment(authSessionState = AuthSessionState.LoggedIn(userId = UserId("user-1")))
+
+        assertEquals(expected = listOf(RootNavKey.Main), actual = env.rootBackStack.keys.first())
+        assertEquals(expected = MainTab.Home, actual = env.rootBackStack.selectedTab.value)
+    }
+
+    @Test
+    fun `GIVEN the shell WHEN a tab key is navigated to THEN the tab switches without stacking a screen`() =
+        runTest {
+            val env = Environment(authSessionState = AuthSessionState.LoggedIn(userId = UserId("user-1")))
+            val observed = mutableListOf<List<NavKey>>()
+            val collection = launch { env.rootBackStack.keys.toList(observed) }
+            runCurrent()
+
+            env.rootBackStack.navigate(ScenariosNavKey)
+            runCurrent()
+
+            assertEquals(expected = MainTab.Scenarios, actual = env.rootBackStack.selectedTab.value)
+            assertEquals(expected = listOf(RootNavKey.Main), actual = observed.last())
+            collection.cancel()
+        }
+
+    @Test
+    fun `GIVEN a selected tab WHEN another tab is visited and the first reselected THEN each keeps its place`() =
+        runTest {
+            val env = Environment(authSessionState = AuthSessionState.LoggedIn(userId = UserId("user-1")))
+
+            env.rootBackStack.selectTab(MainTab.Scenarios)
+            env.rootBackStack.selectTab(MainTab.Profile)
+            env.rootBackStack.selectTab(MainTab.Scenarios)
+
+            assertEquals(expected = MainTab.Scenarios, actual = env.rootBackStack.selectedTab.value)
+        }
+
+    @Test
+    fun `GIVEN the current tab WHEN it is re-tapped THEN a scroll-to-top signal fires for it`() = runTest {
+        val env = Environment(authSessionState = AuthSessionState.LoggedIn(userId = UserId("user-1")))
+        val reselected = mutableListOf<NavKey>()
+        val collection = launch { env.rootBackStack.reselects.toList(reselected) }
+        runCurrent()
+        env.rootBackStack.selectTab(MainTab.Scenarios)
+
+        env.rootBackStack.selectTab(MainTab.Scenarios)
+        runCurrent()
+
+        assertEquals(expected = listOf<NavKey>(ScenariosNavKey), actual = reselected)
+        collection.cancel()
+    }
+
+    @Test
+    fun `GIVEN a non-home tab WHEN the session is re-established THEN the shell opens on home again`() =
+        runTest {
+            val env = Environment(authSessionState = AuthSessionState.LoggedIn(userId = UserId("user-1")))
+            val observed = mutableListOf<List<NavKey>>()
+            val collection = launch { env.rootBackStack.keys.toList(observed) }
+            runCurrent()
+            env.rootBackStack.selectTab(MainTab.Scenarios)
+
+            env.observeAuthSessionStateUseCase.authSessionStates.value = AuthSessionState.LoggedOut
+            runCurrent()
+            env.observeAuthSessionStateUseCase.authSessionStates.value =
+                AuthSessionState.LoggedIn(userId = UserId("user-1"))
+            runCurrent()
+
+            assertEquals(expected = MainTab.Home, actual = env.rootBackStack.selectedTab.value)
+            collection.cancel()
+        }
 
     private class Environment(
         authSessionState: AuthSessionState,

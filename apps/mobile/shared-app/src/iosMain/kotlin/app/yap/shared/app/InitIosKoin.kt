@@ -1,6 +1,8 @@
 package app.yap.shared.app
 
 import app.yap.app.root.di.initKoin
+import app.yap.core.common.analytics.AnalyticsTracker
+import app.yap.core.common.analytics.LoggingAnalyticsTracker
 import app.yap.core.common.platform.IosMotionPreferences
 import app.yap.core.common.platform.MotionPreferences
 import app.yap.core.common.platform.currentPlatform
@@ -23,6 +25,8 @@ fun initIosKoin(
 ) {
     modules(
         module {
+            single<AnalyticsTracker> { LoggingAnalyticsTracker() }
+
             single<MotionPreferences> { IosMotionPreferences() }
 
             single { currentPlatform() }

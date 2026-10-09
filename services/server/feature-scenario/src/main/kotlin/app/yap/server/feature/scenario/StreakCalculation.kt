@@ -1,0 +1,22 @@
+package app.yap.server.feature.scenario
+
+import java.time.LocalDate
+
+internal object StreakCalculation {
+
+    /**
+     * The run of consecutive practised dates anchored at [today] when today is practised and at
+     * yesterday otherwise, so an existing run stays visible all morning (data-model.md).
+     */
+    fun streakDays(practisedDates: Set<LocalDate>, today: LocalDate): Int {
+        val anchor = when {
+            today in practisedDates -> today
+            today.minusDays(1) in practisedDates -> today.minusDays(1)
+            else -> return 0
+        }
+
+        return generateSequence(anchor) { day -> day.minusDays(1) }
+            .takeWhile { day -> day in practisedDates }
+            .count()
+    }
+}

@@ -1,0 +1,340 @@
+package app.yap.feature.scenario.presentation.home
+
+import app.yap.core.test.runViewModelTest
+import app.yap.feature.scenario.StubAnalyticsTracker
+import app.yap.feature.scenario.StubNavigator
+import app.yap.feature.scenario.api.ScenariosNavKey
+import app.yap.feature.scenario.api.entity.OverviewState
+import app.yap.feature.scenario.api.entity.ScenarioStatus
+import app.yap.feature.scenario.api.entity.StubScenarioOverview
+import app.yap.feature.scenario.domain.ScenarioAnalytics
+import app.yap.feature.scenario.domain.usecase.OpenScenarioOutcome
+import app.yap.feature.scenario.domain.usecase.StubObserveScenarioOverviewUseCase
+import app.yap.feature.scenario.domain.usecase.StubOpenScenarioUseCase
+import app.yap.feature.scenario.domain.usecase.StubPaywallUseCase
+import app.yap.feature.scenario.domain.usecase.StubRefreshOverviewUseCase
+import app.yap.feature.scenario.presentation.common.ScenarioCopy
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
+
+internal class HomeViewModelTest {
+
+    @Test
+    fun `GIVEN a fresh account WHEN home renders THEN the hero starts the free scenario`() = runViewModelTest {
+        val env = Environment(state = ready())
+        runCurrent()
+
+        val content = env.viewModel.uiState.value.content
+
+        assertIs<HomeViewModel.UiState.Content.Ready>(content)
+        assertEquals(expected = HomeCopy.START_CTA, actual = content.hero.cta)
+        assertEquals(expected = StubScenarioOverview.FREE_TITLE, actual = content.hero.title)
+        assertEquals(expected = emptyList(), actual = content.activeCards)
+    }
+
+    @Test
+    fun `GIVEN an open scenario WHEN home renders THEN the hero continues it with the step position`() =
+        runViewModelTest {
+            val active = StubScenarioOverview.stubActiveScenario(currentObjective = 2)
+            val env = Environment(
+                state = ready(
+                    StubScenarioOverview.stubOverview(
+                        scenarios = listOf(active, StubScenarioOverview.stubLockedScenario()),
+                        lastOpened = active,
+                        slots = app.yap.feature.scenario.api.entity.SlotUsage(used = 1, capacity = 5),
+                    ),
+                ),
+            )
+            runCurrent()
+
+            val content = env.viewModel.uiState.value.content
+
+            assertIs<HomeViewModel.UiState.Content.Ready>(content)
+            assertEquals(expected = HomeCopy.CONTINUE_CTA, actual = content.hero.cta)
+            assertEquals(expected = "Шаг 2 из 3", actual = content.hero.eyebrow)
+            assertEquals(expected = 1, actual = content.activeCards.size)
+        }
+
+    @Test
+    fun `GIVEN a subscriber with nothing active WHEN home renders THEN the hero leads to the scenarios screen`() =
+        runViewModelTest {
+            val env = Environment(
+                state = ready(
+                    StubScenarioOverview.stubOverview(
+                        scenarios = listOf(
+                            StubScenarioOverview.stubFreeScenario(status = ScenarioStatus.Completed),
+                            StubScenarioOverview.stubLockedScenario(locked = false),
+                        ),
+                    ),
+                ),
+            )
+            runCurrent()
+
+            val content = env.viewModel.uiState.value.content
+
+            assertIs<HomeViewModel.UiState.Content.Ready>(content)
+            assertEquals(expected = HomeCopy.PICK_CTA, actual = content.hero.cta)
+
+            env.viewModel.onEvent(HomeViewModel.Event.PrimaryClicked)
+            runCurrent()
+            env.navigator.navigateCall.calledWith(ScenariosNavKey)
+        }
+
+    @Test
+    fun `GIVEN the screen is shown WHEN it reports itself THEN home_view is recorded exactly once`() =
+        runViewModelTest {
+            val env = Environment(state = ready())
+            runCurrent()
+
+            env.viewModel.onEvent(HomeViewModel.Event.ScreenShown)
+            runCurrent()
+
+            assertEquals(
+                expected = listOf(ScenarioAnalytics.HOME_VIEW),
+                actual = env.analyticsTracker.names(),
+            )
+            env.refreshOverviewUseCase.invokeCall.called(times = 1)
+        }
+
+    @Test
+    fun `GIVEN the continue hero WHEN the primary action is taken THEN the click is recorded and the scenario opens`() =
+        runViewModelTest {
+            val active = StubScenarioOverview.stubActiveScenario()
+            val env = Environment(
+                state = ready(
+                    StubScenarioOverview.stubOverview(
+                        scenarios = listOf(active),
+                        lastOpened = active,
+                    ),
+                ),
+            )
+            runCurrent()
+
+            env.viewModel.onEvent(HomeViewModel.Event.PrimaryClicked)
+            runCurrent()
+
+            assertEquals(expected = listOf(ScenarioAnalytics.CONTINUE_CLICK), actual = env.analyticsTracker.names())
+            env.openScenarioUseCase.invokeCall.called(times = 1)
+        }
+
+    @Test
+    fun `GIVEN no connection WHEN opening declines THEN the message explains practice needs the network`() =
+        runViewModelTest {
+            val active = StubScenarioOverview.stubActiveScenario()
+            val env = Environment(
+                state = ready(StubScenarioOverview.stubOverview(scenarios = listOf(active), lastOpened = active)),
+                openOutcome = OpenScenarioOutcome.NoConnection,
+            )
+            runCurrent()
+            val observed = mutableListOf<HomeViewModel.News>()
+            val collection = launch { env.viewModel.news.collect(observed::add) }
+            runCurrent()
+
+            env.viewModel.onEvent(HomeViewModel.Event.PrimaryClicked)
+            runCurrent()
+
+            assertEquals(
+                expected = listOf<HomeViewModel.News>(HomeViewModel.News.ShowMessage(ScenarioCopy.NEEDS_CONNECTION)),
+                actual = observed,
+            )
+            collection.cancel()
+        }
+
+    @Test
+    fun `GIVEN the full-screen error WHEN retry is asked for THEN the overview refreshes`() = runViewModelTest {
+        val env = Environment(state = OverviewState.Unavailable)
+        runCurrent()
+
+        assertIs<HomeViewModel.UiState.Content.Unavailable>(env.viewModel.uiState.value.content)
+
+        env.viewModel.onEvent(HomeViewModel.Event.RetryClicked)
+        runCurrent()
+
+        env.refreshOverviewUseCase.invokeCall.called(times = 1)
+    }
+
+    @Test
+    fun `GIVEN every scenario is completed WHEN home renders THEN the hero says the programme is done and leads on`() =
+        runViewModelTest {
+            val env = Environment(
+                state = ready(
+                    StubScenarioOverview.stubOverview(
+                        scenarios = listOf(
+                            StubScenarioOverview.stubFreeScenario(status = ScenarioStatus.Completed),
+                            StubScenarioOverview.stubLockedScenario(status = ScenarioStatus.Completed, locked = false),
+                        ),
+                    ),
+                ),
+            )
+            runCurrent()
+
+            val content = env.viewModel.uiState.value.content
+            assertIs<HomeViewModel.UiState.Content.Ready>(content)
+            assertEquals(expected = HomeCopy.ALL_DONE_TITLE, actual = content.hero.title)
+
+            env.viewModel.onEvent(HomeViewModel.Event.PrimaryClicked)
+            runCurrent()
+            env.navigator.navigateCall.calledWith(ScenariosNavKey)
+        }
+
+    @Test
+    fun `GIVEN a scenario just completed WHEN home renders THEN it no longer sits on the active rail`() =
+        runViewModelTest {
+            val stillActive = StubScenarioOverview.stubActiveScenario(id = "active-1", title = "Активный")
+            val env = Environment(
+                state = ready(
+                    StubScenarioOverview.stubOverview(
+                        scenarios = listOf(
+                            stillActive,
+                            StubScenarioOverview.stubFreeScenario(
+                                id = "done-1",
+                                status = ScenarioStatus.Completed,
+                            ),
+                        ),
+                        lastOpened = stillActive,
+                    ),
+                ),
+            )
+            runCurrent()
+
+            val content = env.viewModel.uiState.value.content
+
+            assertIs<HomeViewModel.UiState.Content.Ready>(content)
+            assertEquals(expected = listOf("active-1"), actual = content.activeCards.map { card -> card.id })
+        }
+
+    @Test
+    fun `GIVEN an objective achieved today WHEN the streak renders THEN the note confirms the series is safe`() =
+        runViewModelTest {
+            val env = Environment(
+                state = ready(
+                    StubScenarioOverview.stubOverview(
+                        streak = StubScenarioOverview.stubStreak(
+                            days = 2,
+                            weekDays = weekWithTodayPractised(practisedToday = true),
+                        ),
+                    ),
+                ),
+            )
+            runCurrent()
+
+            val content = env.viewModel.uiState.value.content
+
+            assertIs<HomeViewModel.UiState.Content.Ready>(content)
+            assertEquals(expected = HomeCopy.STREAK_NOTE_SAFE, actual = content.streak.note)
+            assertEquals(expected = "2", actual = content.streak.number)
+        }
+
+    @Test
+    fun `GIVEN a run without today's objective WHEN the streak renders THEN the note asks for one step today`() =
+        runViewModelTest {
+            val env = Environment(
+                state = ready(
+                    StubScenarioOverview.stubOverview(
+                        streak = StubScenarioOverview.stubStreak(
+                            days = 2,
+                            weekDays = weekWithTodayPractised(practisedToday = false),
+                        ),
+                    ),
+                ),
+            )
+            runCurrent()
+
+            val content = env.viewModel.uiState.value.content
+
+            assertIs<HomeViewModel.UiState.Content.Ready>(content)
+            assertEquals(expected = HomeCopy.STREAK_NOTE_KEEP, actual = content.streak.note)
+        }
+
+    @Test
+    fun `GIVEN the promo hero and a run at risk WHEN the streak renders THEN the note warns about tomorrow`() =
+        runViewModelTest {
+            val env = Environment(
+                state = ready(
+                    StubScenarioOverview.stubOverview(
+                        scenarios = listOf(
+                            StubScenarioOverview.stubFreeScenario(status = ScenarioStatus.Completed),
+                            StubScenarioOverview.stubLockedScenario(),
+                        ),
+                        streak = StubScenarioOverview.stubStreak(
+                            days = 3,
+                            weekDays = weekWithTodayPractised(practisedToday = false),
+                        ),
+                    ),
+                ),
+            )
+            runCurrent()
+
+            val content = env.viewModel.uiState.value.content
+
+            assertIs<HomeViewModel.UiState.Content.Ready>(content)
+            assertEquals(expected = HomeCopy.PROMO_TITLE, actual = content.hero.title)
+            assertEquals(expected = HomeCopy.STREAK_NOTE_AT_RISK, actual = content.streak.note)
+        }
+
+    @Test
+    fun `GIVEN the free scenario is done without access WHEN home renders THEN the promo hero previews locked ones`() =
+        runViewModelTest {
+            val env = Environment(
+                state = ready(
+                    StubScenarioOverview.stubOverview(
+                        scenarios = listOf(
+                            StubScenarioOverview.stubFreeScenario(status = ScenarioStatus.Completed),
+                            StubScenarioOverview.stubLockedScenario(id = "locked-1", title = "Платный 1"),
+                            StubScenarioOverview.stubLockedScenario(id = "locked-2", title = "Платный 2"),
+                        ),
+                    ),
+                ),
+            )
+            runCurrent()
+
+            val content = env.viewModel.uiState.value.content
+
+            assertIs<HomeViewModel.UiState.Content.Ready>(content)
+            assertEquals(expected = HomeCopy.PROMO_TITLE, actual = content.hero.title)
+            assertEquals(expected = HomeCopy.PROMO_CTA, actual = content.hero.cta)
+            assertEquals(
+                expected = listOf("locked-1", "locked-2"),
+                actual = content.lockedPreview?.cards?.map { card -> card.id },
+            )
+            assertEquals(expected = HomeCopy.LOCKED_PREVIEW_ALL, actual = content.lockedPreview?.moreLabel)
+        }
+
+    private fun weekWithTodayPractised(practisedToday: Boolean) = List(7) { index ->
+        app.yap.feature.scenario.api.entity.WeekDay(
+            isoDate = "2026-10-0${5 + index}".take(10),
+            practised = (index < 3) || (index == 3 && practisedToday),
+            isToday = index == 3,
+        )
+    }
+
+    private fun ready(
+        overview: app.yap.feature.scenario.api.entity.ScenarioOverview = StubScenarioOverview.stubOverview(),
+    ): OverviewState = OverviewState.Ready(overview = overview, isRefreshing = false)
+
+    private class Environment(
+        state: OverviewState,
+        openOutcome: OpenScenarioOutcome = OpenScenarioOutcome.Opened,
+    ) {
+
+        val analyticsTracker = StubAnalyticsTracker()
+        val navigator = StubNavigator()
+        val observeScenarioOverviewUseCase = StubObserveScenarioOverviewUseCase(state = state)
+        val openPaywallUseCase = StubPaywallUseCase()
+        val openScenarioUseCase = StubOpenScenarioUseCase(outcome = openOutcome)
+        val refreshOverviewUseCase = StubRefreshOverviewUseCase()
+        val viewModel = HomeViewModel(
+            analyticsTracker = analyticsTracker,
+            navigator = navigator,
+            observeScenarioOverviewUseCase = observeScenarioOverviewUseCase,
+            openPaywallUseCase = openPaywallUseCase,
+            openScenarioUseCase = openScenarioUseCase,
+            refreshOverviewUseCase = refreshOverviewUseCase,
+            uiStateMapper = HomeUiStateMapper(),
+        )
+    }
+}

@@ -2,6 +2,8 @@ package app.yap.shared.app
 
 import android.content.Context
 import app.yap.app.root.di.initKoin
+import app.yap.core.common.analytics.AnalyticsTracker
+import app.yap.core.common.analytics.LoggingAnalyticsTracker
 import app.yap.core.common.platform.ActivityProvider
 import app.yap.core.common.platform.AndroidMotionPreferences
 import app.yap.core.common.platform.MotionPreferences
@@ -29,6 +31,8 @@ fun initAndroidKoin(
 ) {
     modules(
         module {
+            single<AnalyticsTracker> { LoggingAnalyticsTracker() }
+
             single { ActivityProvider() }
 
             single { context.applicationContext }

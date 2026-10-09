@@ -9,6 +9,8 @@ interface TokenService {
 
     fun parseRefreshToken(value: String): RefreshToken
 
+    fun verifyAccessToken(value: String): SessionIdentity
+
     fun hash(value: String): String
 
     fun issueTokens(

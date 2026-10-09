@@ -6,6 +6,8 @@ import app.yap.server.core.database.DatabaseFactory
 import app.yap.server.core.security.JwtTokenService
 import app.yap.server.feature.auth.AuthFeature
 import app.yap.server.feature.auth.identity.GoogleAuthConfig
+import app.yap.server.feature.scenario.ScenarioFeature
+import app.yap.server.feature.scenario.access.FreeOnlyAccessPolicy
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStopped
@@ -30,6 +32,7 @@ fun main() {
 internal fun Application.serverModule(
     config: AppConfig,
     authFeature: AuthFeature = authFeature(config),
+    scenarioFeature: ScenarioFeature = scenarioFeature(config),
 ) {
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true; explicitNulls = false })
@@ -47,6 +50,8 @@ internal fun Application.serverModule(
         rateLimit(AUTH_RATE_LIMIT_NAME) {
             authFeature.install(this)
         }
+
+        scenarioFeature.install(this)
     }
 
     monitor.subscribe(ApplicationStopped) {
@@ -55,6 +60,11 @@ internal fun Application.serverModule(
     }
 }
 
+internal fun scenarioFeature(config: AppConfig): ScenarioFeature = ScenarioFeature(
+    accessPolicy = FreeOnlyAccessPolicy(),
+    tokenService = tokenService(config),
+)
+
 internal fun authFeature(config: AppConfig): AuthFeature = AuthFeature(
     googleAuthConfig = GoogleAuthConfig(
         androidClientId = config.googleAndroidClientId,
@@ -62,10 +72,12 @@ internal fun authFeature(config: AppConfig): AuthFeature = AuthFeature(
         webClientId = config.googleWebClientId,
     ),
     refreshTokenTtlSeconds = config.auth.refreshTokenTtlSeconds,
-    tokenService = JwtTokenService(
-        jwtSecret = config.auth.jwtSecret,
-        jwtIssuer = config.auth.jwtIssuer,
-        jwtAudience = config.auth.jwtAudience,
-        accessTokenTtlSeconds = config.auth.accessTokenTtlSeconds,
-    ),
+    tokenService = tokenService(config),
+)
+
+private fun tokenService(config: AppConfig): JwtTokenService = JwtTokenService(
+    jwtSecret = config.auth.jwtSecret,
+    jwtIssuer = config.auth.jwtIssuer,
+    jwtAudience = config.auth.jwtAudience,
+    accessTokenTtlSeconds = config.auth.accessTokenTtlSeconds,
 )
