@@ -1,0 +1,16 @@
+.git
+.idea
+.vscode
+.gradle
+.kotlin
+**/build
+**/out
+DerivedData
+*.iml
+*.log
+.env
+.env.*
+local.properties
+.claude
+specs
+docs
