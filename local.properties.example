@@ -1,0 +1,15 @@
+# Copy to `local.properties` at the repository root (ignored by Git) and fill it in.
+# `apps/mobile/android-app/build.gradle.kts` reads the `yap.*` keys into `BuildConfig`; a Gradle
+# property of the same name (`-Pyap.apiBaseUrl=...`) overrides the file, which is what CI uses.
+
+# Android SDK location, normally written here by Android Studio.
+# sdk.dir=/Users/you/Library/Android/sdk
+
+# Backend base URL, no trailing slash. `http://10.0.2.2:8080` reaches a server on this machine
+# from the emulator.
+yap.apiBaseUrl=
+
+# OAuth client IDs from the Google Cloud console. The web client ID is the `serverClientId` both
+# platforms send; the Android client ID also yields the browser fallback's redirect scheme.
+yap.google.webClientId=
+yap.google.androidClientId=

@@ -2,19 +2,27 @@ import GoogleSignIn
 import SwiftUI
 import YapShared
 
-/// Configuration the entry point owns, mirroring `MainActivity` on Android.
+/// Configuration the entry point owns, mirroring `AppConfiguration` on Android.
 ///
-/// A simulator reaches a server on this machine at `localhost`. The web client ID is the
-/// `serverClientId` both platforms send; the iOS client ID is the one this app authorizes with, and
-/// its reversed form is the URL scheme registered in `Info.plist`. The two legal destinations stay
-/// `nil` until the documents exist — the line renders either way, and the app is not released to
-/// users while either is unset.
+/// The values come from `Config.xcconfig` (copy `Config.example.xcconfig`) through `Info.plist`.
+/// A missing one stops the app here, at launch, with the key to set — not inside a sign-in attempt.
+/// The web client ID is the `serverClientId` both platforms send; the iOS client ID is the one this
+/// app authorizes with, and its reversed form is the URL scheme `Info.plist` registers. The two
+/// legal destinations stay `nil` until the documents exist — the line renders either way, and the
+/// app is not released to users while either is unset.
 private enum AppConfiguration {
-    static let baseUrl = "http://localhost:8080"
-    static let googleClientId = "REPLACE_WITH_IOS_CLIENT_ID.apps.googleusercontent.com"
-    static let googleServerClientId = "REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com"
+    static let baseUrl = required("YapApiBaseUrl")
+    static let googleClientId = required("YapGoogleClientId")
+    static let googleServerClientId = required("YapGoogleServerClientId")
     static let termsUrl: String? = nil
     static let privacyUrl: String? = nil
+
+    private static func required(_ key: String) -> String {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String, !value.isEmpty else {
+            fatalError("\(key) is not set: copy Config.example.xcconfig to Config.xcconfig and fill it in")
+        }
+        return value
+    }
 }
 
 @main

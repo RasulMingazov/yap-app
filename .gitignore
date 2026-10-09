@@ -15,6 +15,7 @@ DerivedData/
 # The template carries no secrets and is what a new clone copies `.env` from.
 !.env.example
 local.properties
+apps/mobile/ios-app/Config.xcconfig
 .claude/*
 !.claude/settings.json
 !.claude/skills/

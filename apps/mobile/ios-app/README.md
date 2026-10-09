@@ -16,7 +16,9 @@ side is checked by building and running it in Xcode.
    ./gradlew :apps:mobile:shared-app:linkDebugFrameworkIosSimulatorArm64
    ```
 
-2. Open `YapApp.xcodeproj` and run.
+2. Copy `Config.example.xcconfig` to `Config.xcconfig` (ignored by Git) and fill it in.
+
+3. Open `YapApp.xcodeproj` and run.
 
 ## Google login
 
@@ -25,18 +27,21 @@ boundary with shared Kotlin: it passes the attempt nonce into the SDK and return
 `nil` when the user dismisses the flow. `feature-auth/impl` keeps its credential contract internal
 and maps that narrow result into the same repository path Android uses.
 
-- Register the reversed iOS client ID as a URL scheme in `Info.plist`, replacing the
-  `com.googleusercontent.apps.REPLACE_WITH_IOS_CLIENT_ID` placeholder.
+- `Info.plist` registers `YAP_GOOGLE_IOS_REVERSED_CLIENT_ID` from `Config.xcconfig` as the URL
+  scheme the SDK returns to.
 - `YapApp.swift` forwards the returned URL to `GIDSignIn` through SwiftUI's `onOpenURL`.
 - The SDK owns browser presentation, PKCE, token exchange, saved account state, and optional App
   Check integration. Kotlin sees none of those SDK types.
 
 ## Configuration
 
-`YapApp.swift` owns the base URL, the iOS and web client IDs, and the two legal destinations,
-mirroring `MainActivity` on Android. A simulator reaches a server running on this machine at
-`http://localhost:8080`. Both legal destinations stay `nil` until the documents exist — the line
-renders either way, and the app is not released to users while either is unset.
+`Config.xcconfig` holds the base URL and the iOS and web client IDs; `Config.example.xcconfig`
+lists the keys, and the project reads the real file as the base configuration of the target, so
+`Info.plist` can forward the values to `YapApp.swift`. A missing value stops the app at launch
+with the key to set. A simulator reaches a server running on this machine at `http://localhost:8080`
+(written `http:/$()/localhost:8080`, since `//` starts a comment in this format). The two legal
+destinations stay `nil` in `YapApp.swift` until the documents exist — the line renders either way,
+and the app is not released to users while either is unset.
 
 ## Launch screen
 

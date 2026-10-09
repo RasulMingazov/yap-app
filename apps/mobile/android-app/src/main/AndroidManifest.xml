@@ -5,9 +5,9 @@
 
     <!--
         The browser fallback's redirect activity is contributed by AppAuth's own manifest and keyed
-        on the `appAuthRedirectScheme` placeholder, which build.gradle.kts fills from
-        `yap.google.reversedClientId`. Setting that property to the reversed Android client ID is
-        what registers `com.googleusercontent.apps.<id>:/oauth2redirect` as a redirect URI.
+        on the `appAuthRedirectScheme` placeholder, which build.gradle.kts derives from
+        `yap.google.androidClientId` in local.properties. That is what registers
+        `com.googleusercontent.apps.<id>:/oauth2redirect` as a redirect URI.
     -->
 
     <application
