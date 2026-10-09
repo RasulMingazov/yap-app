@@ -25,8 +25,8 @@ boundary with shared Kotlin: it passes the attempt nonce into the SDK and return
 `nil` when the user dismisses the flow. `feature-auth/impl` keeps its credential contract internal
 and maps that narrow result into the same repository path Android uses.
 
-- Register the reversed iOS client ID as a URL scheme in `Info.plist`, replacing the
-  `com.googleusercontent.apps.REPLACE_WITH_IOS_CLIENT_ID` placeholder.
+- The reversed iOS client ID is registered as a URL scheme in `Info.plist`; a new client ID means
+  updating it there and in `YapApp.swift` together.
 - `YapApp.swift` forwards the returned URL to `GIDSignIn` through SwiftUI's `onOpenURL`.
 - The SDK owns browser presentation, PKCE, token exchange, saved account state, and optional App
   Check integration. Kotlin sees none of those SDK types.

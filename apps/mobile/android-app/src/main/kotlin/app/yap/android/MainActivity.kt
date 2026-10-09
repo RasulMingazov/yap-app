@@ -16,9 +16,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private const val BASE_URL = "http://10.0.2.2:8080"
-private const val GOOGLE_SERVER_CLIENT_ID = "REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com"
-private const val GOOGLE_ANDROID_CLIENT_ID = "REPLACE_WITH_ANDROID_CLIENT_ID.apps.googleusercontent.com"
-private const val GOOGLE_REDIRECT_URI = "app.yap.oauth:/oauth2redirect"
+private const val GOOGLE_SERVER_CLIENT_ID = "184232410595-uj0tvrpvak94cjud3qbli3l6vdpkl721.apps.googleusercontent.com"
+private const val GOOGLE_ANDROID_CLIENT_ID = "184232410595-18172vhn52tif6moennk14240qgvh2qv.apps.googleusercontent.com"
+private const val GOOGLE_REDIRECT_URI = "com.googleusercontent.apps.184232410595-18172vhn52tif6moennk14240qgvh2qv:/oauth2redirect"
 private val TERMS_URL: String? = null
 private val PRIVACY_URL: String? = null
 

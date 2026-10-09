@@ -11,8 +11,8 @@ import YapShared
 /// users while either is unset.
 private enum AppConfiguration {
     static let baseUrl = "http://localhost:8080"
-    static let googleClientId = "REPLACE_WITH_IOS_CLIENT_ID.apps.googleusercontent.com"
-    static let googleServerClientId = "REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com"
+    static let googleClientId = "184232410595-hrkp9uuslv75p75fltvfmf8luobgujb2.apps.googleusercontent.com"
+    static let googleServerClientId = "184232410595-uj0tvrpvak94cjud3qbli3l6vdpkl721.apps.googleusercontent.com"
     static let termsUrl: String? = nil
     static let privacyUrl: String? = nil
 }
